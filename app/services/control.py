@@ -14,9 +14,9 @@ class ControlService:
         # Applies optimization calculation results to the candidate state.
         return candidate
 
-    def _orchestrate(self, candidate_state: SystemState) -> SystemState:
+    def _orchestrate(self, candidate_state: SystemState, is_tick: bool = False) -> SystemState:
         # 1. Create context
-        context = CalculationContext(state=candidate_state)
+        context = CalculationContext(state=candidate_state, is_tick=is_tick)
         # 2. Invoke engine boundary
         result = self.engine.calculate(context)
         # 3. Assemble result
@@ -34,7 +34,13 @@ class ControlService:
     def process_simulation_status(self, is_running: bool) -> SystemState:
         candidate = self.state_manager.get_state()
         candidate.simulation.is_running = is_running
-        return self._orchestrate(candidate)
+        return self._orchestrate(candidate, is_tick=False)
+
+    def process_simulation_tick(self) -> SystemState:
+        candidate = self.state_manager.get_state()
+        if not candidate.simulation.is_running:
+            return candidate
+        return self._orchestrate(candidate, is_tick=True)
 
     def process_reset_simulation(self) -> SystemState:
         candidate = self.state_manager.create_reset_state()

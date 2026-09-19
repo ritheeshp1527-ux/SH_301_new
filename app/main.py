@@ -3,17 +3,26 @@ import sys
 # Ensure src is in the python path for sh305 imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.api.rest import router as api_router
 from app.api.websocket import router as ws_router
+from app.api.deps import get_simulation_runtime
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    runtime = get_simulation_runtime()
+    await runtime.shutdown()
 
 app = FastAPI(
     title="SH-305 Backend API",
     description="Authoritative backend REST contract for Smart EV Charging.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS configuration for frontend/3D integration

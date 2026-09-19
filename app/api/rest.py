@@ -5,7 +5,8 @@ from typing import Optional
 from app.models.pydantic_state import SystemState, StrategyType, EV
 from app.services.state_manager import RuntimeStateManager
 from app.services.control import ControlService
-from app.api.deps import get_state_manager, get_control_service
+from app.services.simulation_runtime import SimulationRuntime
+from app.api.deps import get_state_manager, get_control_service, get_simulation_runtime
 from app.api.websocket import get_connection_manager, ConnectionManager
 
 router = APIRouter(prefix="/api", tags=["Control"])
@@ -63,37 +64,28 @@ def get_state(manager: RuntimeStateManager = Depends(get_state_manager)):
 
 @router.post("/simulation/start", response_model=SystemState)
 async def start_simulation(
-    control: ControlService = Depends(get_control_service),
-    ws_manager: ConnectionManager = Depends(get_connection_manager)
+    runtime: SimulationRuntime = Depends(get_simulation_runtime)
 ):
     try:
-        new_state = control.process_simulation_status(is_running=True)
-        await ws_manager.broadcast_state(new_state)
-        return new_state
+        return await runtime.start()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/simulation/pause", response_model=SystemState)
 async def pause_simulation(
-    control: ControlService = Depends(get_control_service),
-    ws_manager: ConnectionManager = Depends(get_connection_manager)
+    runtime: SimulationRuntime = Depends(get_simulation_runtime)
 ):
     try:
-        new_state = control.process_simulation_status(is_running=False)
-        await ws_manager.broadcast_state(new_state)
-        return new_state
+        return await runtime.pause()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/simulation/reset", response_model=SystemState)
 async def reset_simulation(
-    control: ControlService = Depends(get_control_service),
-    ws_manager: ConnectionManager = Depends(get_connection_manager)
+    runtime: SimulationRuntime = Depends(get_simulation_runtime)
 ):
     try:
-        new_state = control.process_reset_simulation()
-        await ws_manager.broadcast_state(new_state)
-        return new_state
+        return await runtime.reset()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

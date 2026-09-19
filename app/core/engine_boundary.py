@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from app.models.pydantic_state import SystemState
 from src.sh305.integration.adapter import from_backend_state, to_backend_state
 from src.sh305.engine.controller import _recompute
+from src.sh305.engine.simulation import step_simulation
+from sh305.engine.priority import STRATEGY_WEIGHTS, WeightConfig
 
 class CalculationContext(BaseModel):
     """
@@ -10,6 +12,7 @@ class CalculationContext(BaseModel):
     Conceptually holds all necessary state to perform optimizations.
     """
     state: SystemState
+    is_tick: Optional[bool] = None
 
 class CalculationResult(BaseModel):
     """
@@ -157,53 +160,88 @@ class EngineBoundary:
             alerts=[]
         )
         
+        # Determine strategy weights
+        strategy_name = state.strategy.active_strategy if hasattr(state, "strategy") else "BALANCED"
+        weights = STRATEGY_WEIGHTS.get(strategy_name, WeightConfig())
+
+        # Determine if this execution is a simulation tick
+        is_tick = context.is_tick
+        if is_tick is None:
+            # Fallback for direct boundary calls in unit tests
+            is_tick = state.simulation.is_running
+
+        timestep = getattr(state.simulation, "timestep", 0.25)
+        if timestep <= 0.0:
+            timestep = 0.25
+
         # 2. Execute Engine
-        _recompute(internal_state)
+        if is_tick and state.simulation.is_running:
+            step_simulation(internal_state, step_hours=timestep, weights=weights)
+        else:
+            _recompute(internal_state, step_hours=timestep, weights=weights)
         
         # 3. Map back directly into context.state to avoid Pydantic schema validation crashes
-        if state.simulation.is_running:
-            internal_state.simulation.simulation_time += getattr(state.simulation, "timestep", 0.25)
-        state.simulation.simulation_time = internal_state.simulation.simulation_time
-        
-        # Clean up floating point epsilon from 0.001 boundary limits
-        if internal_state.grid.current_import_kw < 0.01:
-            state.grid.grid_import = 0.0
-        else:
-            state.grid.grid_import = internal_state.grid.current_import_kw
-            if state.grid.grid_import > state.grid.active_limit:
-                state.grid.grid_import = state.grid.active_limit
-                
-        state.grid.available_capacity = internal_state.grid.available_capacity_kw
-        state.solar.usable_solar = internal_state.solar.usable_solar_kw
-        state.solar.excess_solar = internal_state.solar.excess_solar_kw
-        
+        state.simulation.simulation_time = round(internal_state.simulation.simulation_time, 4)
+
+        # Map environment time of day (capitalize e.g. "Morning", "Afternoon", "Evening", "Night")
+        if hasattr(internal_state.environment, "time_of_day") and internal_state.environment.time_of_day:
+            tod = internal_state.environment.time_of_day.value
+            state.environment.time_of_day = tod.capitalize()
+
+        # Map building demand
+        state.building.ac_demand = round(internal_state.building.ac_demand_kw, 4)
+        state.building.lights_demand = round(internal_state.building.lights_demand_kw, 4)
+        state.building.lifts_demand = round(internal_state.building.lifts_demand_kw, 4)
+        state.building.appliances_demand = round(internal_state.building.appliances_demand_kw, 4)
+        state.building.total_building_demand = round(
+            state.building.ac_demand + state.building.lights_demand + state.building.lifts_demand + state.building.appliances_demand, 4
+        )
+
+        # Map solar generation
+        state.solar.generation = round(internal_state.solar.generation_kw, 4)
+
         # Map stations
         st_map = {st.station_id: st for st in internal_state.stations}
         for st in state.stations:
             if st.station_id in st_map:
                 ist = st_map[st.station_id]
-                st.allocated_power = ist.current_allocated_power_kw if ist.current_allocated_power_kw >= 0.01 else 0.0
+                st.allocated_power = round(ist.current_allocated_power_kw, 4) if ist.current_allocated_power_kw >= 0.01 else 0.0
                 st.status = ist.status.value
+                st.occupancy = ist.occupied
+                st.connected_ev_id = ist.connected_ev_id
                 
         # Map EVs
         ev_map = {ev.ev_id: ev for ev in internal_state.evs}
         for ev in state.evs:
             if ev.ev_id in ev_map:
                 iev = ev_map[ev.ev_id]
-                if hasattr(ev, "current_rate"): ev.current_rate = iev.current_charging_rate_kw if iev.current_charging_rate_kw >= 0.01 else 0.0
-                if hasattr(ev, "energy_required"): ev.energy_required = iev.energy_required_kwh
-                if hasattr(ev, "time_remaining"): ev.time_remaining = iev.time_remaining_hours
-                if hasattr(ev, "required_average_power"): ev.required_average_power = iev.required_average_power_kw
-                if hasattr(ev, "priority_score"): ev.priority_score = iev.priority_score
-                if hasattr(ev, "estimated_completion"): ev.estimated_completion = iev.estimated_completion_time or 0.0
-                if hasattr(ev, "estimated_soc_at_departure"): ev.estimated_soc_at_departure = iev.estimated_soc_at_departure or 0.0
+                ev.current_soc = min(100.0, max(0.0, round(iev.current_soc, 4)))
+                ev.station_id = iev.station_id
+                if hasattr(ev, "current_rate"): ev.current_rate = round(iev.current_charging_rate_kw, 4) if iev.current_charging_rate_kw >= 0.01 else 0.0
+                if hasattr(ev, "energy_required"): ev.energy_required = round(iev.energy_required_kwh, 4)
+                if hasattr(ev, "time_remaining"): ev.time_remaining = round(iev.time_remaining_hours, 4)
+                if hasattr(ev, "required_average_power"): ev.required_average_power = round(iev.required_average_power_kw, 4)
+                if hasattr(ev, "priority_score"): ev.priority_score = round(iev.priority_score, 4)
+                if hasattr(ev, "estimated_completion"): ev.estimated_completion = round(iev.estimated_completion_time or 0.0, 4)
+                if hasattr(ev, "estimated_soc_at_departure"): ev.estimated_soc_at_departure = round(iev.estimated_soc_at_departure or 0.0, 4)
                 if hasattr(ev, "deadline_status"): ev.deadline_status = iev.deadline_status.value
                 if hasattr(ev, "physical_feasibility"): ev.physical_feasibility = iev.physical_feasibility
                 if hasattr(ev, "current_allocation_feasibility"): ev.current_allocation_feasibility = iev.current_allocation_feasibility
                 if hasattr(ev, "a3_risk"): ev.a3_risk = "HIGH_RISK" if iev.predictive_risk_flag else "NONE"
                 if hasattr(ev, "a2_reason"): ev.a2_reason = iev.reason
-                if hasattr(ev, "grid_contribution"): ev.grid_contribution = iev.grid_contribution_kw
-                if hasattr(ev, "solar_contribution"): ev.solar_contribution = iev.solar_contribution_kw
+                if hasattr(ev, "grid_contribution"): ev.grid_contribution = round(iev.grid_contribution_kw, 4)
+                if hasattr(ev, "solar_contribution"): ev.solar_contribution = round(iev.solar_contribution_kw, 4)
+
+        # Master Energy Model reconciliation to strictly satisfy StateValidator
+        site_load = state.building.total_building_demand + sum(ev.current_rate for ev in state.evs)
+        usable_solar = min(state.solar.generation, site_load)
+        excess_solar = max(0.0, state.solar.generation - site_load)
+        grid_import = max(0.0, site_load - usable_solar)
+
+        state.solar.usable_solar = round(usable_solar, 4)
+        state.solar.excess_solar = round(excess_solar, 4)
+        state.grid.grid_import = min(state.grid.active_limit, round(grid_import, 4))
+        state.grid.available_capacity = max(0.0, round(state.grid.active_limit - state.grid.grid_import, 4))
 
         # Map allocations
         if hasattr(state, "allocations"):
@@ -213,9 +251,9 @@ class EngineBoundary:
                 if iev.station_id:
                     state.allocations.append(PydanticAllocation(
                         ev_id=iev.ev_id,
-                        allocated_rate=iev.current_charging_rate_kw if iev.current_charging_rate_kw >= 0.01 else 0.0,
+                        allocated_rate=round(iev.current_charging_rate_kw, 4) if iev.current_charging_rate_kw >= 0.01 else 0.0,
                         allocation_status="ACTIVE" if iev.current_charging_rate_kw > 0.01 else "PENDING",
-                        grid_contribution=iev.grid_contribution_kw
+                        grid_contribution=round(iev.grid_contribution_kw, 4)
                     ))
 
         # Clear updated_state_dict since we mutate directly
