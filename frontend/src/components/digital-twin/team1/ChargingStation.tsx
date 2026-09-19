@@ -1,6 +1,6 @@
 import { Box, RoundedBox, Cylinder } from '@react-three/drei'
 import { Interactive } from './Interactive'
-import { useLiveStation, useLiveEV, useLiveStations, useLiveEVs } from '../adapters/useLiveAdapters'
+import { useLiveStation, useLiveEV } from '../adapters/useLiveAdapters'
 import type { Station } from '@/types/system.types'
 import * as THREE from 'three'
 import { useMemo } from 'react'
@@ -24,18 +24,20 @@ export function ChargingStation({
 }: Team1ChargingStationProps) {
   const stationLive = useLiveStation(station_id)
   const stationData = stationLive || propStation
-  const stations = useLiveStations() || []
-  const evs = useLiveEVs() || []
 
   // Resolve connected EV safely
   const connectedEvId = stationData?.connected_ev_id
   const evData = useLiveEV(connectedEvId)
 
   // Determine physical connection:
-  // EV must exist, connectedEvId must match, and station occupancy must not be explicitly false
+  // EV must exist, station must specify connected_ev_id, ev.station_id must match this station,
+  // and station occupancy must not be explicitly false.
   const isConnected = Boolean(
     connectedEvId &&
     evData &&
+    evData.station_id &&
+    evData.station_id.trim().toUpperCase() === station_id.trim().toUpperCase() &&
+    (stationData?.connected_ev_id === evData.ev_id) &&
     (stationData?.occupancy === undefined || stationData?.occupancy === true)
   )
 
@@ -55,73 +57,26 @@ export function ChargingStation({
     }
   }
 
-  // Dynamic Cable Endpoint & Curve Calculation
-  // Calculate relative displacement from station to EV dynamically rather than hardcoding Z=3
-  const stationIndex = stations.findIndex(s => s.station_id === station_id)
-  const stationX = position[0] ?? (stationIndex !== -1 ? (stationIndex - stations.length / 2) * 4 : 0)
-  const stationZ = position[2] ?? 0
-
-  let relX = 0
-  let relZ = 3
-
-  if (isConnected && evData) {
-    const assignedStationIndex = stations.findIndex(s => s.station_id === evData.station_id)
-    let evX = 0
-    let evZ = 3
-
-    if (assignedStationIndex !== -1) {
-      evX = (assignedStationIndex - stations.length / 2) * 4
-      evZ = 3
-    } else {
-      const evIndex = evs.findIndex(e => e.ev_id === evData.ev_id)
-      const fallbackIndex = evIndex !== -1 ? evIndex : 0
-      evX = (fallbackIndex - evs.length / 2) * 2
-      evZ = 10
-    }
-
-    relX = evX - stationX
-    relZ = evZ - stationZ
-  }
-
-  // Station local coordinates:
-  // Start: right side outlet
-  const startX = 0.28
-  const startY = 1.3
-  const startZ = 0.0
-
-  // Disconnected holster coordinates:
-  const holsterMidX = 0.4
-  const holsterMidY = 0.6
-  const holsterMidZ = 0.2
-  const holsterEndX = 0.28
-  const holsterEndY = 0.9
-  const holsterEndZ = 0.1
-
-  // Connected charging port coordinates (EV charge port is located at [+0.4, 0.5, -0.8] in EV local space):
-  const portX = relX + 0.4
-  const portY = 0.5
-  const portZ = relZ - 0.8
-
-  const midX = (startX + portX) / 2 + (portX >= startX ? 0.3 : -0.3)
-  const midY = 0.1 // Droop near ground
-  const midZ = (startZ + portZ) / 2
-
-  // Stable Bezier Curve definition to prevent geometry recreation across standard data ticks
+  // Cable Curve Definition (Original Team 1 Station-Local Coordinates)
+  // When an EV is connected inside the station's charging bay (offset [0, 0, +2.5] relative to station),
+  // the cable originates at the pedestal outlet (0.28, 1.3, 0.0), droops toward the ground (0.8, 0.1, 1.2),
+  // and terminates cleanly at the vehicle charge port (0.4, 0.5, 2.2).
+  // When disconnected, the cable forms a small droop loop returning to the side holster (0.28, 0.9, 0.1).
   const cableCurve = useMemo(() => {
     if (isConnected) {
       return new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(startX, startY, startZ),
-        new THREE.Vector3(midX, midY, midZ),
-        new THREE.Vector3(portX, portY, portZ)
+        new THREE.Vector3(0.28, 1.3, 0.0),  // pedestal outlet
+        new THREE.Vector3(0.8, 0.1, 1.2),   // ground droop
+        new THREE.Vector3(0.4, 0.5, 2.2)    // vehicle charge port
       )
     } else {
       return new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(startX, startY, startZ),
-        new THREE.Vector3(holsterMidX, holsterMidY, holsterMidZ),
-        new THREE.Vector3(holsterEndX, holsterEndY, holsterEndZ)
+        new THREE.Vector3(0.28, 1.3, 0.0),  // pedestal outlet
+        new THREE.Vector3(0.4, 0.6, 0.2),   // small loop
+        new THREE.Vector3(0.28, 0.9, 0.1)   // holster
       )
     }
-  }, [isConnected, portX, portY, portZ, midX, midY, midZ])
+  }, [isConnected])
 
   return (
     <Interactive id={station_id || 'unknown-station'} type="station" position={position} rotation={rotation} onSelect={onSelect}>

@@ -82,6 +82,13 @@ class ControlService:
                 raise ValueError("Station is already occupied")
             station.occupancy = True
             station.connected_ev_id = ev_data["ev_id"]
+        else:
+            # Auto-assign to first available station
+            station = next((s for s in candidate.stations if not s.occupancy), None)
+            if station:
+                station.occupancy = True
+                station.connected_ev_id = ev_data["ev_id"]
+                station_id = station.station_id
             
         new_ev = EV(
             ev_id=ev_data["ev_id"],
@@ -110,7 +117,7 @@ class ControlService:
             a2_reason="INIT",
             grid_contribution=0.0,
             solar_contribution=0.0,
-            station_id=ev_data.get("station_id")
+            station_id=station_id
         )
         candidate.evs.append(new_ev)
         return self._orchestrate(candidate)

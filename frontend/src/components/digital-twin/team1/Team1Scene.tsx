@@ -19,31 +19,7 @@ interface Team1SceneProps {
   systemState?: SystemState
 }
 
-const STATION_LAYOUT: Record<string, { stationPos: [number, number, number]; evPos: [number, number, number] }> = {
-  'ST-1': { stationPos: [-7.5, 0, 7.5], evPos: [-7.5, 0, 10] },
-  'ST-2': { stationPos: [-4.5, 0, 7.5], evPos: [-4.5, 0, 10] },
-  'ST-3': { stationPos: [-1.5, 0, 7.5], evPos: [-1.5, 0, 10] },
-  'ST-4': { stationPos: [1.5, 0, 7.5], evPos: [1.5, 0, 10] },
-  'ST-5': { stationPos: [4.5, 0, 7.5], evPos: [4.5, 0, 10] },
-  'ST-6': { stationPos: [7.5, 0, 7.5], evPos: [7.5, 0, 10] }
-}
-
-const DEFAULT_STATIONS = ['ST-1', 'ST-2', 'ST-3', 'ST-4', 'ST-5', 'ST-6']
-const WAITING_BAY_POSITIONS: [number, number, number][] = [
-  [14.5, 0, 10],
-  [17.5, 0, 10]
-]
-
-function getStationPlacement(stationId: string, idx: number, count: number) {
-  if (STATION_LAYOUT[stationId]) {
-    return STATION_LAYOUT[stationId]
-  }
-  const x = (idx - (count - 1) / 2) * 3.0
-  return {
-    stationPos: [x, 0, 7.5] as [number, number, number],
-    evPos: [x, 0, 10] as [number, number, number]
-  }
-}
+import { DEFAULT_STATIONS, getStationPlacement, resolveEVPlacements } from './positioning'
 
 export function Team1Scene({ onSelect, systemState: propState }: Team1SceneProps = {}) {
   const liveStations = useLiveStations()
@@ -57,8 +33,8 @@ export function Team1Scene({ onSelect, systemState: propState }: Team1SceneProps
     ? stations
     : DEFAULT_STATIONS.map((id) => ({ station_id: id, occupancy: false, connected_ev_id: null, capacity: 22, maximum_charging_rate: 22 }))
 
-  // Separate EVs into docked at charging stations vs unassigned/waiting
-  let waitingIndex = 0
+  // Resolve placement for every EV deterministically according to Phase 14C rules
+  const resolvedEVs = resolveEVPlacements(evs, stationsToRender)
 
   return (
     <>
@@ -109,28 +85,16 @@ export function Team1Scene({ onSelect, systemState: propState }: Team1SceneProps
       })}
 
       {/* EVs: Render dynamically based on live/prop state */}
-      {evs && evs.map((ev, idx) => {
-        let evPos: [number, number, number]
-        const stIndex = stationsToRender.findIndex((s) => s.station_id === ev.station_id)
-        if (ev.station_id && stIndex !== -1) {
-          evPos = getStationPlacement(ev.station_id, stIndex, stationsToRender.length).evPos
-        } else {
-          // Park in waiting bay or overflow
-          evPos = WAITING_BAY_POSITIONS[waitingIndex] ?? [14.5 + (waitingIndex * 3), 0, 10]
-          waitingIndex++
-        }
-
-        return (
-          <EVModel
-            key={ev.ev_id || `ev-${idx}`}
-            ev_id={ev.ev_id}
-            ev={ev}
-            position={evPos}
-            rotation={[0, Math.PI, 0]}
-            onSelect={onSelect}
-          />
-        )
-      })}
+      {resolvedEVs.map(({ ev, pos }) => (
+        <EVModel
+          key={ev.ev_id}
+          ev_id={ev.ev_id}
+          ev={ev}
+          position={pos}
+          rotation={[0, Math.PI, 0]}
+          onSelect={onSelect}
+        />
+      ))}
 
       {/* Grid and Transformer */}
       <GridInfrastructure
