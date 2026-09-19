@@ -1,4 +1,4 @@
-import { useSystemState } from '../state/MockState'
+import { useLiveEnvironment } from '../adapters/useLiveAdapters'
 import { Environment as DreiEnvironment, Sky, Cloud } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useRef, useMemo } from 'react'
@@ -49,11 +49,11 @@ function Rain() {
 // Reads ONLY from SystemState.environment.weather and .time_of_day.
 // Does NOT compute or alter any energy/EV/solar/building values.
 export function WeatherEnvironment() {
-  const state = useSystemState()
+  const environment = useLiveEnvironment()
 
   // Exact backend fields — not modified, only read
-  const weatherStr = state.environment?.weather   || 'Sunny'
-  const timeStr    = state.environment?.time_of_day || 'Morning'
+  const weatherStr = environment?.weather   || 'Sunny'
+  const timeStr    = environment?.time_of_day || 'Morning'
 
   const isNight  = timeStr    === 'Night'   || timeStr    === 'Evening'
   const isRain   = weatherStr === 'Rain'    || weatherStr === 'Rainy'

@@ -1,5 +1,5 @@
 import { Box, Cylinder } from '@react-three/drei'
-import { useSystemState } from '../state/MockState'
+import { useLiveEV, useLiveAllocationForEV } from '../adapters/useLiveAdapters'
 import { Interactive } from './Interactive'
 
 // ── Generic Battery Visualization ───────────────────────────────────────────
@@ -57,12 +57,12 @@ function Wheel({ position, scale = 1 }: { position: [number, number, number], sc
 }
 
 // ── 1. SUV ──────────────────────────────────────────────────────────────────
-export function SUV({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0] }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number] }) {
-  const state = useSystemState()
-  const evData = state.evs?.find((e: any) => e.ev_id === ev_id)
+export function SUV({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number], onSelect?: (id: string, type: string) => void }) {
+  const evData = useLiveEV(ev_id)
+  const allocation = useLiveAllocationForEV(ev_id)
 
   return (
-    <Interactive id={ev_id} type="ev" position={position} rotation={rotation}>
+    <Interactive id={ev_id} type="ev" position={position} rotation={rotation} onSelect={onSelect}>
       <group scale={1.15}>
         {/* Main Lower Body */}
         <Box args={[1.8, 0.7, 4.4]} position={[0, 0.75, 0]} castShadow receiveShadow>
@@ -89,19 +89,19 @@ export function SUV({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0] }: { ev_
         <Wheel position={[-0.95, 0.4, -1.4]} scale={1.2} />
         <Wheel position={[0.95, 0.4, -1.4]} scale={1.2} />
         
-        <BatteryVisual soc={evData?.current_soc} solar_contribution={evData?.solar_contribution} a3_risk={evData?.a3_risk} />
+        <BatteryVisual soc={evData?.current_soc} solar_contribution={allocation?.solar_contribution} a3_risk={evData?.a3_risk} />
       </group>
     </Interactive>
   )
 }
 
 // ── 2. Sedan ────────────────────────────────────────────────────────────────
-export function Sedan({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0] }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number] }) {
-  const state = useSystemState()
-  const evData = state.evs?.find((e: any) => e.ev_id === ev_id)
+export function Sedan({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number], onSelect?: (id: string, type: string) => void }) {
+  const evData = useLiveEV(ev_id)
+  const allocation = useLiveAllocationForEV(ev_id)
 
   return (
-    <Interactive id={ev_id} type="ev" position={position} rotation={rotation}>
+    <Interactive id={ev_id} type="ev" position={position} rotation={rotation} onSelect={onSelect}>
       <group scale={1.15}>
         <Box args={[1.7, 0.55, 4.6]} position={[0, 0.65, 0]} castShadow receiveShadow>
           <meshStandardMaterial color="#94a3b8" metalness={0.7} roughness={0.25} />
@@ -129,19 +129,19 @@ export function Sedan({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0] }: { e
         <Wheel position={[-0.9, 0.35, -1.5]} scale={1.05} />
         <Wheel position={[0.9, 0.35, -1.5]} scale={1.05} />
         
-        <BatteryVisual soc={evData?.current_soc} solar_contribution={evData?.solar_contribution} a3_risk={evData?.a3_risk} />
+        <BatteryVisual soc={evData?.current_soc} solar_contribution={allocation?.solar_contribution} a3_risk={evData?.a3_risk} />
       </group>
     </Interactive>
   )
 }
 
 // ── 3. Hatchback ────────────────────────────────────────────────────────────
-export function Hatchback({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0] }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number] }) {
-  const state = useSystemState()
-  const evData = state.evs?.find((e: any) => e.ev_id === ev_id)
+export function Hatchback({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number], onSelect?: (id: string, type: string) => void }) {
+  const evData = useLiveEV(ev_id)
+  const allocation = useLiveAllocationForEV(ev_id)
 
   return (
-    <Interactive id={ev_id} type="ev" position={position} rotation={rotation}>
+    <Interactive id={ev_id} type="ev" position={position} rotation={rotation} onSelect={onSelect}>
       <group scale={1.15}>
         <Box args={[1.6, 0.6, 3.8]} position={[0, 0.65, 0.2]} castShadow receiveShadow>
           <meshStandardMaterial color="#dc2626" metalness={0.6} roughness={0.4} />
@@ -164,19 +164,19 @@ export function Hatchback({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0] }:
         <Wheel position={[-0.85, 0.35, -1.1]} scale={1.0} />
         <Wheel position={[0.85, 0.35, -1.1]} scale={1.0} />
         
-        <BatteryVisual soc={evData?.current_soc} solar_contribution={evData?.solar_contribution} a3_risk={evData?.a3_risk} />
+        <BatteryVisual soc={evData?.current_soc} solar_contribution={allocation?.solar_contribution} a3_risk={evData?.a3_risk} />
       </group>
     </Interactive>
   )
 }
 
 // ── 4. Electric Scooter (Modern Ather/Ola style) ────────────────────────────
-export function Scooter({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0] }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number] }) {
-  const state = useSystemState()
-  const evData = state.evs?.find((e: any) => e.ev_id === ev_id)
+export function Scooter({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number], onSelect?: (id: string, type: string) => void }) {
+  const evData = useLiveEV(ev_id)
+  const allocation = useLiveAllocationForEV(ev_id)
 
   return (
-    <Interactive id={ev_id} type="ev" position={position} rotation={rotation}>
+    <Interactive id={ev_id} type="ev" position={position} rotation={rotation} onSelect={onSelect}>
       <group scale={1.15}>
         {/* Step-through Deck */}
         <Box args={[0.5, 0.15, 0.8]} position={[0, 0.25, 0.2]} castShadow receiveShadow>
@@ -226,7 +226,7 @@ export function Scooter({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0] }: {
         </group>
 
         <group position={[0, 0.1, 0]} scale={0.5}>
-          <BatteryVisual soc={evData?.current_soc} solar_contribution={evData?.solar_contribution} a3_risk={evData?.a3_risk} />
+          <BatteryVisual soc={evData?.current_soc} solar_contribution={allocation?.solar_contribution} a3_risk={evData?.a3_risk} />
         </group>
       </group>
     </Interactive>
@@ -234,12 +234,12 @@ export function Scooter({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0] }: {
 }
 
 // ── 5. Electric Motorcycle (Proper Street-Bike Silhouette) ──────────────────
-export function Bike({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0] }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number] }) {
-  const state = useSystemState()
-  const evData = state.evs?.find((e: any) => e.ev_id === ev_id)
+export function Bike({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number], onSelect?: (id: string, type: string) => void }) {
+  const evData = useLiveEV(ev_id)
+  const allocation = useLiveAllocationForEV(ev_id)
 
   return (
-    <Interactive id={ev_id} type="ev" position={position} rotation={rotation}>
+    <Interactive id={ev_id} type="ev" position={position} rotation={rotation} onSelect={onSelect}>
       <group scale={1.15}>
         {/* Central Motor / Battery Housing (replaces engine/tank) */}
         <Box args={[0.45, 0.6, 0.9]} position={[0, 0.55, 0.1]} castShadow receiveShadow>
@@ -299,7 +299,7 @@ export function Bike({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0] }: { ev
         </group>
 
         <group position={[0, 0.15, 0.1]} scale={0.5}>
-          <BatteryVisual soc={evData?.current_soc} solar_contribution={evData?.solar_contribution} a3_risk={evData?.a3_risk} />
+          <BatteryVisual soc={evData?.current_soc} solar_contribution={allocation?.solar_contribution} a3_risk={evData?.a3_risk} />
         </group>
       </group>
     </Interactive>

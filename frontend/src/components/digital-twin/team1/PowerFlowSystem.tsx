@@ -1,4 +1,4 @@
-import { useSystemState } from '../state/MockState'
+import { useLiveSystemState } from '../adapters/useLiveAdapters'
 import { Line } from '@react-three/drei'
 import { useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
@@ -60,7 +60,7 @@ function FlowLines({ flows }: { flows: Array<{ path: Array<[number,number,number
 }
 
 export function PowerFlowSystem() {
-  const state = useSystemState()
+  const state = useLiveSystemState()
 
   // EXACT BACKEND MAPPINGS (Preserved from Phase 1-15)
   // Zero/missing kW = no flow rendered.
@@ -78,9 +78,10 @@ export function PowerFlowSystem() {
 
   const flows: Array<{ path: Array<[number,number,number]>, power: number, color: string }> = []
 
-  state.evs?.forEach((ev: any) => {
+  state?.evs?.forEach((ev: any) => {
     if (!ev.station_id || !STATION_POSITIONS[ev.station_id]) return
     const { charger, ev: evPos } = STATION_POSITIONS[ev.station_id]
+    const allocation = state.allocations?.find((a: any) => a.ev_id === ev.ev_id)
 
     // Route grid flow along a ground-level path rather than a diagonal line through the sky
     const gridRoute: Array<[number,number,number]> = [
@@ -103,10 +104,10 @@ export function PowerFlowSystem() {
       evPos
     ]
 
-    if ((ev.grid_contribution || 0) > 0)
-      flows.push({ path: gridRoute, power: ev.grid_contribution!, color: '#ef4444' }) 
-    if ((ev.solar_contribution || 0) > 0)
-      flows.push({ path: solarRoute, power: ev.solar_contribution!, color: '#3b82f6' }) 
+    if ((allocation?.grid_contribution || 0) > 0)
+      flows.push({ path: gridRoute, power: allocation!.grid_contribution!, color: '#ef4444' }) 
+    if ((allocation?.solar_contribution || 0) > 0)
+      flows.push({ path: solarRoute, power: allocation!.solar_contribution!, color: '#3b82f6' }) 
     if ((ev.current_rate || 0) > 0)
       flows.push({ path: chargerRoute, power: ev.current_rate!, color: '#06b6d4' }) 
   })

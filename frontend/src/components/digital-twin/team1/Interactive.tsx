@@ -1,7 +1,7 @@
 import React, { useRef } from 'react'
 import * as THREE from 'three'
 import { useHelper } from '@react-three/drei'
-import { useSelection, SelectionState, type EntityType } from '../state/SelectionStore'
+import { useSelection, SelectionState, type EntityType } from './SelectionStore'
 
 interface InteractiveProps {
   id: string
@@ -9,9 +9,10 @@ interface InteractiveProps {
   children: React.ReactNode
   position?: [number, number, number]
   rotation?: [number, number, number]
+  onSelect?: (id: string, type: string) => void
 }
 
-export function Interactive({ id, type, children, position, rotation }: InteractiveProps) {
+export function Interactive({ id, type, children, position, rotation, onSelect }: InteractiveProps) {
   const ref = useRef<THREE.Group>(null)
   const selection = useSelection()
   const isSelected = selection.id === id && selection.type === type
@@ -22,6 +23,7 @@ export function Interactive({ id, type, children, position, rotation }: Interact
   const handleClick = (e: any) => {
     e.stopPropagation() // Prevent click from bubbling up or clearing selection
     SelectionState.select(type, id)
+    if (onSelect) onSelect(id, type || '')
   }
 
   return (

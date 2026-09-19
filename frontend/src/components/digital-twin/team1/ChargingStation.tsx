@@ -1,13 +1,12 @@
 import { Box, RoundedBox, Cylinder } from '@react-three/drei'
 import { Interactive } from './Interactive'
-import { useSystemState } from '../state/MockState'
+import { useLiveStation, useLiveEV } from '../adapters/useLiveAdapters'
 import * as THREE from 'three'
 import { useMemo } from 'react'
 
-export function ChargingStation({ station_id, position = [0, 0, 0], rotation = [0, 0, 0] }: any) {
-  const state = useSystemState()
-  const stationData = state.stations?.find((s: any) => s.station_id === station_id)
-  const evData = state.evs?.find((e: any) => e.ev_id === stationData?.connected_ev_id)
+export function ChargingStation({ station_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: any) {
+  const stationData = useLiveStation(station_id)
+  const evData = useLiveEV(stationData?.connected_ev_id)
 
   let ledColor = "#00e5ff" // Cyan = no EV connected
   if (evData) {
@@ -43,7 +42,7 @@ export function ChargingStation({ station_id, position = [0, 0, 0], rotation = [
   }, [evData])
 
   return (
-    <Interactive id={station_id || 'unknown-station'} type="station" position={position} rotation={rotation}>
+    <Interactive id={station_id || 'unknown-station'} type="station" position={position} rotation={rotation} onSelect={onSelect}>
       {/* Base Footing */}
       <Box args={[0.7, 0.1, 0.5]} position={[0, 0.05, 0]} castShadow receiveShadow>
         <meshStandardMaterial color="#1a1c20" roughness={0.9} />
