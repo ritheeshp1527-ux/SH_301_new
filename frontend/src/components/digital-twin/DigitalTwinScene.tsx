@@ -1,7 +1,7 @@
 import React, { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { SceneEnvironment } from './SceneEnvironment';
+import { WeatherEnvironment } from './team1/WeatherEnvironment';
 import { SiteGround } from './SiteGround';
 import { MainBuilding } from './MainBuilding';
 import { GridTransformer } from './GridTransformer';
@@ -35,7 +35,7 @@ export const DigitalTwinScene: React.FC = () => {
       
       <Canvas shadows camera={{ position: [0, 15, 30], fov: 45 }}>
         <Suspense fallback={null}>
-          <SceneEnvironment />
+          <WeatherEnvironment />
           <SiteGround />
           <GridTransformer onSelect={handleSelect} />
           <MainBuilding onSelect={handleSelect} />
