@@ -1,15 +1,9 @@
 import React, { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { WeatherEnvironment } from './team1/WeatherEnvironment';
-import { SiteGround } from './SiteGround';
-import { MainBuilding } from './MainBuilding';
-import { GridTransformer } from './GridTransformer';
-import { SolarArray } from './SolarArray';
-import { StationGroup } from './StationGroup';
-import { EVGroup } from './EVGroup';
-import { PowerWires } from './PowerWires';
 import { SelectionPanel } from './SelectionPanel';
+import { Team1Scene } from './team1/Team1Scene';
+import { SelectionState } from './team1/state/SelectionStore';
 
 export const DigitalTwinScene: React.FC = () => {
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
@@ -17,12 +11,18 @@ export const DigitalTwinScene: React.FC = () => {
 
   const handleSelect = (id: string, type: string) => {
     setSelectedEntityId(id);
-    setSelectedEntityType(type);
+    setSelectedEntityType(type ? type.toUpperCase() : null);
+    SelectionState.select(type ? (type.toLowerCase() as any) : null, id);
   };
 
   const handleClosePanel = () => {
     setSelectedEntityId(null);
     setSelectedEntityType(null);
+    SelectionState.clear();
+  };
+
+  const handlePointerMissed = () => {
+    SelectionState.clear();
   };
 
   return (
@@ -33,23 +33,22 @@ export const DigitalTwinScene: React.FC = () => {
         onClose={handleClosePanel} 
       />
       
-      <Canvas shadows camera={{ position: [0, 15, 30], fov: 45 }}>
+      <Canvas
+        shadows
+        camera={{ position: [25, 18, 35], fov: 45, near: 0.5, far: 300 }}
+        onPointerMissed={handlePointerMissed}
+        dpr={[1, 1.5]}
+        gl={{ antialias: true, powerPreference: 'high-performance' }}
+      >
         <Suspense fallback={null}>
-          <WeatherEnvironment />
-          <SiteGround />
-          <GridTransformer onSelect={handleSelect} />
-          <MainBuilding onSelect={handleSelect} />
-          <SolarArray onSelect={handleSelect} />
-          <PowerWires />
-          <StationGroup onSelect={handleSelect} />
-          <EVGroup onSelect={handleSelect} />
+          <Team1Scene onSelect={handleSelect} />
           
           <OrbitControls 
             makeDefault 
             maxPolarAngle={Math.PI / 2 - 0.05} // Keep camera above ground
-            minDistance={5}
-            maxDistance={100}
-            target={[0, 0, 0]}
+            minDistance={8}
+            maxDistance={150}
+            target={[-2, 0, 8]}
           />
         </Suspense>
       </Canvas>

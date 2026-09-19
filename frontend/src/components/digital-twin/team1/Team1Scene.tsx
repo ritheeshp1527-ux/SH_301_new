@@ -34,6 +34,17 @@ const WAITING_BAY_POSITIONS: [number, number, number][] = [
   [17.5, 0, 10]
 ]
 
+function getStationPlacement(stationId: string, idx: number, count: number) {
+  if (STATION_LAYOUT[stationId]) {
+    return STATION_LAYOUT[stationId]
+  }
+  const x = (idx - (count - 1) / 2) * 3.0
+  return {
+    stationPos: [x, 0, 7.5] as [number, number, number],
+    evPos: [x, 0, 10] as [number, number, number]
+  }
+}
+
 export function Team1Scene({ onSelect, systemState: propState }: Team1SceneProps = {}) {
   const liveStations = useLiveStations()
   const liveEVs = useLiveEVs()
@@ -78,21 +89,20 @@ export function Team1Scene({ onSelect, systemState: propState }: Team1SceneProps
 
       {/* Shed and Parking */}
       <ChargingShed position={[0, 0, 10]} onSelect={onSelect} />
-      <ParkingArea position={[0, 0, 10]} spots={6} isCharging={true} />
+      <ParkingArea position={[0, 0, 10]} spots={Math.max(6, stationsToRender.length)} isCharging={true} />
 
       {/* Waiting Area (Non-charging parking spots) on the right side with gap */}
       <ParkingArea position={[16, 0, 10]} spots={2} isCharging={false} />
 
       {/* Charging Stations */}
       {stationsToRender.map((station, idx) => {
-        const layout = STATION_LAYOUT[station.station_id]
-        const stationPos: [number, number, number] = layout?.stationPos ?? [(idx - 2.5) * 3, 0, 7.5]
+        const placement = getStationPlacement(station.station_id, idx, stationsToRender.length)
         return (
           <ChargingStation
             key={station.station_id}
             station_id={station.station_id}
             station={station as any}
-            position={stationPos}
+            position={placement.stationPos}
             onSelect={onSelect}
           />
         )
@@ -101,8 +111,9 @@ export function Team1Scene({ onSelect, systemState: propState }: Team1SceneProps
       {/* EVs: Render dynamically based on live/prop state */}
       {evs && evs.map((ev, idx) => {
         let evPos: [number, number, number]
-        if (ev.station_id && STATION_LAYOUT[ev.station_id]) {
-          evPos = STATION_LAYOUT[ev.station_id].evPos
+        const stIndex = stationsToRender.findIndex((s) => s.station_id === ev.station_id)
+        if (ev.station_id && stIndex !== -1) {
+          evPos = getStationPlacement(ev.station_id, stIndex, stationsToRender.length).evPos
         } else {
           // Park in waiting bay or overflow
           evPos = WAITING_BAY_POSITIONS[waitingIndex] ?? [14.5 + (waitingIndex * 3), 0, 10]

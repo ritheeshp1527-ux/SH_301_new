@@ -80,8 +80,22 @@ export function PowerFlowSystem({ systemState: propState }: { systemState?: any 
   const flows: Array<{ path: Array<[number,number,number]>, power: number, color: string }> = []
 
   state?.evs?.forEach((ev: any) => {
-    if (!ev.station_id || !STATION_POSITIONS[ev.station_id]) return
-    const { charger, ev: evPos } = STATION_POSITIONS[ev.station_id]
+    if (!ev.station_id) return
+    let charger: [number, number, number]
+    let evPos: [number, number, number]
+
+    if (STATION_POSITIONS[ev.station_id]) {
+      charger = STATION_POSITIONS[ev.station_id].charger
+      evPos = STATION_POSITIONS[ev.station_id].ev
+    } else {
+      const stationIdx = state.stations?.findIndex((s: any) => s.station_id === ev.station_id) ?? -1
+      if (stationIdx === -1) return
+      const totalStations = state.stations?.length || 6
+      const x = (stationIdx - (totalStations - 1) / 2) * 3.0
+      charger = [x, 1.5, 7.5]
+      evPos = [x, 0.5, 10]
+    }
+
     const allocation = state.allocations?.find((a: any) => a.ev_id === ev.ev_id)
 
     // Canonical EV contribution fields preferred; allocation used as fallback

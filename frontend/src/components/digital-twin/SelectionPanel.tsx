@@ -15,9 +15,10 @@ export const SelectionPanel: React.FC<SelectionPanelProps> = ({ entityId, entity
 
   if (!entityId || !entityType || !systemState) return null;
 
+  const type = entityType.toUpperCase();
   let content = null;
 
-  if (entityType === 'EV') {
+  if (type === 'EV') {
     const ev = systemState.evs.find(e => e.ev_id === entityId);
     if (ev) {
       const alloc = systemState.allocations?.find(a => a.ev_id === ev.ev_id);
@@ -37,7 +38,7 @@ export const SelectionPanel: React.FC<SelectionPanelProps> = ({ entityId, entity
         </div>
       );
     }
-  } else if (entityType === 'STATION') {
+  } else if (type === 'STATION') {
     const station = systemState.stations.find(s => s.station_id === entityId);
     if (station) {
       content = (
@@ -49,7 +50,7 @@ export const SelectionPanel: React.FC<SelectionPanelProps> = ({ entityId, entity
         </div>
       );
     }
-  } else if (entityType === 'GRID') {
+  } else if (type === 'GRID') {
     content = (
       <div className="space-y-2 text-sm text-slate-700 dark:text-zinc-300">
         <p><strong>Import:</strong> {systemState.grid.grid_import?.toFixed(1)} kW</p>
@@ -57,16 +58,21 @@ export const SelectionPanel: React.FC<SelectionPanelProps> = ({ entityId, entity
         <p><strong>Safety State:</strong> {systemState.grid.safety_state}</p>
       </div>
     );
-  } else if (entityType === 'BUILDING') {
+  } else if (type === 'BUILDING') {
     content = (
       <div className="space-y-2 text-sm text-slate-700 dark:text-zinc-300">
         <p><strong>Total Demand:</strong> {systemState.building.total_building_demand?.toFixed(1)} kW</p>
+        <p><strong>AC Demand:</strong> {systemState.building.ac_demand?.toFixed(1)} kW</p>
+        <p><strong>Lighting:</strong> {systemState.building.lights_demand?.toFixed(1)} kW</p>
+        <p><strong>Lifts:</strong> {systemState.building.lifts_demand?.toFixed(1)} kW</p>
       </div>
     );
-  } else if (entityType === 'SOLAR') {
+  } else if (type === 'SOLAR') {
     content = (
       <div className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
         <p><strong>Generation:</strong> {systemState.solar.generation?.toFixed(1)} kW</p>
+        <p><strong>Usable:</strong> {systemState.solar.usable_solar?.toFixed(1)} kW</p>
+        <p><strong>Excess:</strong> {systemState.solar.excess_solar?.toFixed(1)} kW</p>
       </div>
     );
   }
