@@ -19,3 +19,7 @@ export const useDomainStore = create<DomainState>((set) => ({
   setConnectionStatus: (status: WebSocketConnectionState) => set({ connectionStatus: status }),
   clearSystemState: () => set({ systemState: null, lastUpdated: null }),
 }));
+
+if (typeof window !== 'undefined') {
+  (window as any).useDomainStore = useDomainStore;
+}

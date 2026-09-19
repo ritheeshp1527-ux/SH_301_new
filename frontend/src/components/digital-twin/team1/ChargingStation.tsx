@@ -1,45 +1,127 @@
 import { Box, RoundedBox, Cylinder } from '@react-three/drei'
 import { Interactive } from './Interactive'
-import { useLiveStation, useLiveEV } from '../adapters/useLiveAdapters'
+import { useLiveStation, useLiveEV, useLiveStations, useLiveEVs } from '../adapters/useLiveAdapters'
+import type { Station } from '@/types/system.types'
 import * as THREE from 'three'
 import { useMemo } from 'react'
 
-export function ChargingStation({ station_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: any) {
-  const stationData = useLiveStation(station_id)
-  const evData = useLiveEV(stationData?.connected_ev_id)
+interface Team1ChargingStationProps {
+  station_id: string
+  station?: Station
+  position?: [number, number, number]
+  rotation?: [number, number, number]
+  onSelect?: (id: string, type: string) => void
+}
 
-  let ledColor = "#00e5ff" // Cyan = no EV connected
-  if (evData) {
-    const currentRate = evData.current_rate ?? 0
-    const maxRate = evData.maximum_rate ?? 0
+const RATE_TOLERANCE = 0.05
 
-    if (currentRate === 0) {
-      ledColor = "#ff0000"
-    } else if (currentRate < maxRate) {
-      ledColor = "#ffff00"
+export function ChargingStation({
+  station_id,
+  station: propStation,
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  onSelect
+}: Team1ChargingStationProps) {
+  const stationLive = useLiveStation(station_id)
+  const stationData = stationLive || propStation
+  const stations = useLiveStations() || []
+  const evs = useLiveEVs() || []
+
+  // Resolve connected EV safely
+  const connectedEvId = stationData?.connected_ev_id
+  const evData = useLiveEV(connectedEvId)
+
+  // Determine physical connection:
+  // EV must exist, connectedEvId must match, and station occupancy must not be explicitly false
+  const isConnected = Boolean(
+    connectedEvId &&
+    evData &&
+    (stationData?.occupancy === undefined || stationData?.occupancy === true)
+  )
+
+  // Status LED logic based on backend engine state
+  let ledColor = "#00e5ff" // Cyan = available / idle / no connected EV
+
+  if (isConnected && evData) {
+    const currentRate = evData.current_rate ?? stationData?.allocated_power ?? 0
+    const maxRate = evData.maximum_rate ?? stationData?.maximum_charging_rate ?? 0
+
+    if (currentRate <= 0) {
+      ledColor = "#ff0000" // Red = stopped / idle charging
+    } else if (maxRate > 0 && currentRate >= maxRate - RATE_TOLERANCE) {
+      ledColor = "#00ff00" // Green = maximum-rate charging
     } else {
-      ledColor = "#00ff00"
+      ledColor = "#ffff00" // Yellow = partial-rate charging
     }
   }
 
-  // Cable Curve Definition
-  // If an EV is connected, curve to the EV position (Z offset +2.5 based on scene layout).
-  // Otherwise, create a short loop returning to the holster on the side of the charger.
+  // Dynamic Cable Endpoint & Curve Calculation
+  // Calculate relative displacement from station to EV dynamically rather than hardcoding Z=3
+  const stationIndex = stations.findIndex(s => s.station_id === station_id)
+  const stationX = position[0] ?? (stationIndex !== -1 ? (stationIndex - stations.length / 2) * 4 : 0)
+  const stationZ = position[2] ?? 0
+
+  let relX = 0
+  let relZ = 3
+
+  if (isConnected && evData) {
+    const assignedStationIndex = stations.findIndex(s => s.station_id === evData.station_id)
+    let evX = 0
+    let evZ = 3
+
+    if (assignedStationIndex !== -1) {
+      evX = (assignedStationIndex - stations.length / 2) * 4
+      evZ = 3
+    } else {
+      const evIndex = evs.findIndex(e => e.ev_id === evData.ev_id)
+      const fallbackIndex = evIndex !== -1 ? evIndex : 0
+      evX = (fallbackIndex - evs.length / 2) * 2
+      evZ = 10
+    }
+
+    relX = evX - stationX
+    relZ = evZ - stationZ
+  }
+
+  // Station local coordinates:
+  // Start: right side outlet
+  const startX = 0.28
+  const startY = 1.3
+  const startZ = 0.0
+
+  // Disconnected holster coordinates:
+  const holsterMidX = 0.4
+  const holsterMidY = 0.6
+  const holsterMidZ = 0.2
+  const holsterEndX = 0.28
+  const holsterEndY = 0.9
+  const holsterEndZ = 0.1
+
+  // Connected charging port coordinates (EV charge port is located at [+0.4, 0.5, -0.8] in EV local space):
+  const portX = relX + 0.4
+  const portY = 0.5
+  const portZ = relZ - 0.8
+
+  const midX = (startX + portX) / 2 + (portX >= startX ? 0.3 : -0.3)
+  const midY = 0.1 // Droop near ground
+  const midZ = (startZ + portZ) / 2
+
+  // Stable Bezier Curve definition to prevent geometry recreation across standard data ticks
   const cableCurve = useMemo(() => {
-    if (evData) {
+    if (isConnected) {
       return new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(0.28, 1.3, 0.0),  // start at charger side
-        new THREE.Vector3(0.8, 0.1, 1.2),   // droop to ground
-        new THREE.Vector3(0.4, 0.5, 2.2)    // end at EV charge port (approximate side of EV)
+        new THREE.Vector3(startX, startY, startZ),
+        new THREE.Vector3(midX, midY, midZ),
+        new THREE.Vector3(portX, portY, portZ)
       )
     } else {
       return new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(0.28, 1.3, 0.0),  // start at charger side
-        new THREE.Vector3(0.4, 0.6, 0.2),   // small droop loop
-        new THREE.Vector3(0.28, 0.9, 0.1)   // end at holster
+        new THREE.Vector3(startX, startY, startZ),
+        new THREE.Vector3(holsterMidX, holsterMidY, holsterMidZ),
+        new THREE.Vector3(holsterEndX, holsterEndY, holsterEndZ)
       )
     }
-  }, [evData])
+  }, [isConnected, portX, portY, portZ, midX, midY, midZ])
 
   return (
     <Interactive id={station_id || 'unknown-station'} type="station" position={position} rotation={rotation} onSelect={onSelect}>
@@ -48,9 +130,8 @@ export function ChargingStation({ station_id, position = [0, 0, 0], rotation = [
         <meshStandardMaterial color="#1a1c20" roughness={0.9} />
       </Box>
       
-      {/* Main Pedestal Body - Sleek angled front */}
+      {/* Main Pedestal Body */}
       <mesh position={[0, 1.05, -0.05]} castShadow receiveShadow>
-         {/* Simple box for now, slightly taller and wider */}
          <boxGeometry args={[0.5, 2.0, 0.3]} />
          <meshStandardMaterial color="#e2e8f0" roughness={0.3} metalness={0.2} />
       </mesh>
@@ -70,7 +151,7 @@ export function ChargingStation({ station_id, position = [0, 0, 0], rotation = [
         <meshBasicMaterial color="#ffffff" />
       </Box>
 
-      {/* Status LED Indicator Strip (replaces simple ring) */}
+      {/* Status LED Indicator Strip */}
       <Box args={[0.4, 0.04, 0.02]} position={[0, 1.9, 0.15]}>
         <meshStandardMaterial color={ledColor} emissive={ledColor} emissiveIntensity={1.2} toneMapped={false} />
       </Box>

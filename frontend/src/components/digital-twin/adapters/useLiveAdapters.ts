@@ -29,3 +29,11 @@ export function useLiveSystemState() {
   // A fallback for Iterating over all EVs/Stations if necessary (like PowerFlowSystem mapping all flows)
   return useDomainStore(state => state.systemState);
 }
+
+export function useLiveStations() {
+  return useDomainStore(state => state.systemState?.stations);
+}
+
+export function useLiveEVs() {
+  return useDomainStore(state => state.systemState?.evs);
+}
