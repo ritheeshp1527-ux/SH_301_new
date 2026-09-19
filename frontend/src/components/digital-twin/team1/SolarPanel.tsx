@@ -75,6 +75,7 @@ export function SolarArray({
   spacingZ = 3.5,
   position = [0, 0, 0],
   rotation = [0, 0, 0],
+  onSelect
 }: any) {
   const panels = []
   for (let r = 0; r < rows; r++) {
@@ -88,7 +89,7 @@ export function SolarArray({
     }
   }
   return (
-    <Interactive id={id} type="solar" position={position} rotation={rotation}>
+    <Interactive id={id} type="solar" position={position} rotation={rotation} onSelect={onSelect}>
       {panels}
     </Interactive>
   )

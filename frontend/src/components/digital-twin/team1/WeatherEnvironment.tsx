@@ -3,6 +3,7 @@ import { Environment as DreiEnvironment, Sky, Cloud } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useRef, useMemo } from 'react'
 import * as THREE from 'three'
+import type { Environment } from '@/types/system.types'
 
 // ── Rain ────────────────────────────────────────────────────────────────────
 // Rendered as instanced thin boxes (streak effect) so rain is clearly visible.
@@ -48,8 +49,9 @@ function Rain() {
 // ── WeatherEnvironment ───────────────────────────────────────────────────────
 // Reads ONLY from SystemState.environment.weather and .time_of_day.
 // Does NOT compute or alter any energy/EV/solar/building values.
-export function WeatherEnvironment() {
-  const environment = useLiveEnvironment()
+export function WeatherEnvironment({ environment: propEnv }: { environment?: Environment } = {}) {
+  const liveEnv = useLiveEnvironment()
+  const environment = propEnv ?? liveEnv
 
   // Exact backend fields — not modified, only read
   const weatherStr = environment?.weather   || 'Sunny'

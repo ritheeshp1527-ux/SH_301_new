@@ -1,6 +1,7 @@
 import { Box, Cylinder } from '@react-three/drei'
 import { Interactive } from './Interactive'
-import { useSystemState } from './state/MockState'
+import { useLiveBuilding } from '../adapters/useLiveAdapters'
+import type { Building as BuildingData } from '@/types/system.types'
 
 // Normalize a kW demand value to [0, 1].
 function norm(value: number, kWCeiling: number): number {
@@ -13,9 +14,15 @@ function demandColor(n: number): string {
   return '#ef4444'
 }
 
-export function Building({ position = [0, 0, 0] }: { position?: [number, number, number] }) {
-  const state = useSystemState()
-  const b = state.building
+interface BuildingProps {
+  position?: [number, number, number]
+  building?: BuildingData
+  onSelect?: (id: string, type: string) => void
+}
+
+export function Building({ position = [0, 0, 0], building: propBuilding, onSelect }: BuildingProps) {
+  const liveBuilding = useLiveBuilding()
+  const b = propBuilding ?? liveBuilding
 
   // EXACT BACKEND FIELDS
   const acDemand          = b?.ac_demand          ?? 0
@@ -85,7 +92,7 @@ export function Building({ position = [0, 0, 0] }: { position?: [number, number,
   }
 
   return (
-    <Interactive id="building-main" type="building" position={position}>
+    <Interactive id="building-main" type="building" position={position} onSelect={onSelect}>
       {/* ── CORE STRUCTURE ── */}
       <Box args={[29, 19.8, 19.8]} position={[0, 9.9, 0]} receiveShadow castShadow>
         <meshStandardMaterial color="#2d3748" roughness={0.8} />

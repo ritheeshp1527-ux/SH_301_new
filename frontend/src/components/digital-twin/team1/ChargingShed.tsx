@@ -1,7 +1,13 @@
 import { Box, Cylinder } from '@react-three/drei'
 import { SolarArray } from './SolarPanel'
 
-export function ChargingShed({ position = [0, 0, 0], rotation = [0, 0, 0] }: any) {
+interface ChargingShedProps {
+  position?: [number, number, number]
+  rotation?: [number, number, number]
+  onSelect?: (id: string, type: string) => void
+}
+
+export function ChargingShed({ position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: ChargingShedProps) {
   const pillarXs = [-9, -3, 3, 9]
 
   return (
@@ -66,6 +72,7 @@ export function ChargingShed({ position = [0, 0, 0], rotation = [0, 0, 0] }: any
         spacingZ={3.2}
         position={[0, 5.75, 0]}
         rotation={[0, 0, 0]}
+        onSelect={onSelect}
       />
     </group>
   )

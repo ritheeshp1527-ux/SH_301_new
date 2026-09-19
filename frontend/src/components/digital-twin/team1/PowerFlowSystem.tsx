@@ -59,8 +59,9 @@ function FlowLines({ flows }: { flows: Array<{ path: Array<[number,number,number
   )
 }
 
-export function PowerFlowSystem() {
-  const state = useLiveSystemState()
+export function PowerFlowSystem({ systemState: propState }: { systemState?: any } = {}) {
+  const liveState = useLiveSystemState()
+  const state = propState ?? liveState
 
   // EXACT BACKEND MAPPINGS (Preserved from Phase 1-15)
   // Zero/missing kW = no flow rendered.
@@ -83,6 +84,11 @@ export function PowerFlowSystem() {
     const { charger, ev: evPos } = STATION_POSITIONS[ev.station_id]
     const allocation = state.allocations?.find((a: any) => a.ev_id === ev.ev_id)
 
+    // Canonical EV contribution fields preferred; allocation used as fallback
+    const gridPower = ev.grid_contribution ?? allocation?.grid_contribution ?? 0
+    const solarPower = ev.solar_contribution ?? allocation?.solar_contribution ?? 0
+    const chargerPower = ev.current_rate ?? allocation?.allocated_rate ?? 0
+
     // Route grid flow along a ground-level path rather than a diagonal line through the sky
     const gridRoute: Array<[number,number,number]> = [
       GRID_POS,
@@ -104,12 +110,12 @@ export function PowerFlowSystem() {
       evPos
     ]
 
-    if ((allocation?.grid_contribution || 0) > 0)
-      flows.push({ path: gridRoute, power: allocation!.grid_contribution!, color: '#ef4444' }) 
-    if ((allocation?.solar_contribution || 0) > 0)
-      flows.push({ path: solarRoute, power: allocation!.solar_contribution!, color: '#3b82f6' }) 
-    if ((ev.current_rate || 0) > 0)
-      flows.push({ path: chargerRoute, power: ev.current_rate!, color: '#06b6d4' }) 
+    if (gridPower > 0)
+      flows.push({ path: gridRoute, power: gridPower, color: '#ef4444' }) 
+    if (solarPower > 0)
+      flows.push({ path: solarRoute, power: solarPower, color: '#3b82f6' }) 
+    if (chargerPower > 0)
+      flows.push({ path: chargerRoute, power: chargerPower, color: '#06b6d4' }) 
   })
 
   if (flows.length === 0) return null

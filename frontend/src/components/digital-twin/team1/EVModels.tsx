@@ -1,6 +1,7 @@
 import { Box, Cylinder } from '@react-three/drei'
 import { useLiveEV, useLiveAllocationForEV } from '../adapters/useLiveAdapters'
 import { Interactive } from './Interactive'
+import type { EV } from '@/types/system.types'
 
 // ── Generic Battery Visualization ───────────────────────────────────────────
 function BatteryVisual({ soc, solar_contribution, a3_risk }: { soc?: number, solar_contribution?: number, a3_risk?: string }) {
@@ -56,10 +57,20 @@ function Wheel({ position, scale = 1 }: { position: [number, number, number], sc
   )
 }
 
+export interface EVModelProps {
+  ev_id: string
+  ev?: EV
+  position?: [number, number, number]
+  rotation?: [number, number, number]
+  onSelect?: (id: string, type: string) => void
+}
+
 // ── 1. SUV ──────────────────────────────────────────────────────────────────
-export function SUV({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number], onSelect?: (id: string, type: string) => void }) {
-  const evData = useLiveEV(ev_id)
+export function SUV({ ev_id, ev: propEv, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: EVModelProps) {
+  const liveEv = useLiveEV(ev_id)
   const allocation = useLiveAllocationForEV(ev_id)
+  const evData = propEv ?? liveEv
+  const solarContrib = evData?.solar_contribution ?? allocation?.solar_contribution
 
   return (
     <Interactive id={ev_id} type="ev" position={position} rotation={rotation} onSelect={onSelect}>
@@ -89,16 +100,18 @@ export function SUV({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelec
         <Wheel position={[-0.95, 0.4, -1.4]} scale={1.2} />
         <Wheel position={[0.95, 0.4, -1.4]} scale={1.2} />
         
-        <BatteryVisual soc={evData?.current_soc} solar_contribution={allocation?.solar_contribution} a3_risk={evData?.a3_risk} />
+        <BatteryVisual soc={evData?.current_soc} solar_contribution={solarContrib} a3_risk={evData?.a3_risk} />
       </group>
     </Interactive>
   )
 }
 
 // ── 2. Sedan ────────────────────────────────────────────────────────────────
-export function Sedan({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number], onSelect?: (id: string, type: string) => void }) {
-  const evData = useLiveEV(ev_id)
+export function Sedan({ ev_id, ev: propEv, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: EVModelProps) {
+  const liveEv = useLiveEV(ev_id)
   const allocation = useLiveAllocationForEV(ev_id)
+  const evData = propEv ?? liveEv
+  const solarContrib = evData?.solar_contribution ?? allocation?.solar_contribution
 
   return (
     <Interactive id={ev_id} type="ev" position={position} rotation={rotation} onSelect={onSelect}>
@@ -129,16 +142,18 @@ export function Sedan({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSel
         <Wheel position={[-0.9, 0.35, -1.5]} scale={1.05} />
         <Wheel position={[0.9, 0.35, -1.5]} scale={1.05} />
         
-        <BatteryVisual soc={evData?.current_soc} solar_contribution={allocation?.solar_contribution} a3_risk={evData?.a3_risk} />
+        <BatteryVisual soc={evData?.current_soc} solar_contribution={solarContrib} a3_risk={evData?.a3_risk} />
       </group>
     </Interactive>
   )
 }
 
 // ── 3. Hatchback ────────────────────────────────────────────────────────────
-export function Hatchback({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number], onSelect?: (id: string, type: string) => void }) {
-  const evData = useLiveEV(ev_id)
+export function Hatchback({ ev_id, ev: propEv, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: EVModelProps) {
+  const liveEv = useLiveEV(ev_id)
   const allocation = useLiveAllocationForEV(ev_id)
+  const evData = propEv ?? liveEv
+  const solarContrib = evData?.solar_contribution ?? allocation?.solar_contribution
 
   return (
     <Interactive id={ev_id} type="ev" position={position} rotation={rotation} onSelect={onSelect}>
@@ -164,16 +179,18 @@ export function Hatchback({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], o
         <Wheel position={[-0.85, 0.35, -1.1]} scale={1.0} />
         <Wheel position={[0.85, 0.35, -1.1]} scale={1.0} />
         
-        <BatteryVisual soc={evData?.current_soc} solar_contribution={allocation?.solar_contribution} a3_risk={evData?.a3_risk} />
+        <BatteryVisual soc={evData?.current_soc} solar_contribution={solarContrib} a3_risk={evData?.a3_risk} />
       </group>
     </Interactive>
   )
 }
 
 // ── 4. Electric Scooter (Modern Ather/Ola style) ────────────────────────────
-export function Scooter({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number], onSelect?: (id: string, type: string) => void }) {
-  const evData = useLiveEV(ev_id)
+export function Scooter({ ev_id, ev: propEv, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: EVModelProps) {
+  const liveEv = useLiveEV(ev_id)
   const allocation = useLiveAllocationForEV(ev_id)
+  const evData = propEv ?? liveEv
+  const solarContrib = evData?.solar_contribution ?? allocation?.solar_contribution
 
   return (
     <Interactive id={ev_id} type="ev" position={position} rotation={rotation} onSelect={onSelect}>
@@ -226,7 +243,7 @@ export function Scooter({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onS
         </group>
 
         <group position={[0, 0.1, 0]} scale={0.5}>
-          <BatteryVisual soc={evData?.current_soc} solar_contribution={allocation?.solar_contribution} a3_risk={evData?.a3_risk} />
+          <BatteryVisual soc={evData?.current_soc} solar_contribution={solarContrib} a3_risk={evData?.a3_risk} />
         </group>
       </group>
     </Interactive>
@@ -234,9 +251,11 @@ export function Scooter({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onS
 }
 
 // ── 5. Electric Motorcycle (Proper Street-Bike Silhouette) ──────────────────
-export function Bike({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: { ev_id: string, position?: [number, number, number], rotation?: [number, number, number], onSelect?: (id: string, type: string) => void }) {
-  const evData = useLiveEV(ev_id)
+export function Bike({ ev_id, ev: propEv, position = [0, 0, 0], rotation = [0, 0, 0], onSelect }: EVModelProps) {
+  const liveEv = useLiveEV(ev_id)
   const allocation = useLiveAllocationForEV(ev_id)
+  const evData = propEv ?? liveEv
+  const solarContrib = evData?.solar_contribution ?? allocation?.solar_contribution
 
   return (
     <Interactive id={ev_id} type="ev" position={position} rotation={rotation} onSelect={onSelect}>
@@ -299,9 +318,43 @@ export function Bike({ ev_id, position = [0, 0, 0], rotation = [0, 0, 0], onSele
         </group>
 
         <group position={[0, 0.15, 0.1]} scale={0.5}>
-          <BatteryVisual soc={evData?.current_soc} solar_contribution={allocation?.solar_contribution} a3_risk={evData?.a3_risk} />
+          <BatteryVisual soc={evData?.current_soc} solar_contribution={solarContrib} a3_risk={evData?.a3_risk} />
         </group>
       </group>
     </Interactive>
   )
+}
+
+// ── Dynamic Model Chooser ───────────────────────────────────────────────────
+export function EVModel({
+  ev_id,
+  ev: propEv,
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  onSelect
+}: {
+  ev_id?: string
+  ev?: EV
+  position?: [number, number, number]
+  rotation?: [number, number, number]
+  onSelect?: (id: string, type: string) => void
+}) {
+  const targetId = propEv?.ev_id || ev_id || ''
+  const liveEv = useLiveEV(targetId)
+  const ev = propEv || liveEv
+  const vehicleType = (ev?.vehicle_type || '').toLowerCase()
+
+  if (vehicleType.includes('suv')) {
+    return <SUV ev_id={targetId} ev={ev} position={position} rotation={rotation} onSelect={onSelect} />
+  }
+  if (vehicleType.includes('hatchback')) {
+    return <Hatchback ev_id={targetId} ev={ev} position={position} rotation={rotation} onSelect={onSelect} />
+  }
+  if (vehicleType.includes('scooter')) {
+    return <Scooter ev_id={targetId} ev={ev} position={position} rotation={rotation} onSelect={onSelect} />
+  }
+  if (vehicleType.includes('bike') || vehicleType.includes('motorcycle')) {
+    return <Bike ev_id={targetId} ev={ev} position={position} rotation={rotation} onSelect={onSelect} />
+  }
+  return <Sedan ev_id={targetId} ev={ev} position={position} rotation={rotation} onSelect={onSelect} />
 }

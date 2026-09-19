@@ -1,10 +1,28 @@
 import { Box, Cylinder } from '@react-three/drei'
 import { Interactive } from './Interactive'
-import { useSystemState } from './state/MockState'
+import { useLiveEmergency, useLiveGrid } from '../adapters/useLiveAdapters'
+import type { Grid, Emergency } from '@/types/system.types'
 
-export function GridInfrastructure({ position = [0, 0, 0], rotation = [0, 0, 0] }: any) {
-  const state = useSystemState()
-  const isEmergency = state.emergency?.emergency_active_state === true
+interface GridInfrastructureProps {
+  position?: [number, number, number]
+  rotation?: [number, number, number]
+  emergency?: Emergency
+  grid?: Grid
+  onSelect?: (id: string, type: string) => void
+}
+
+export function GridInfrastructure({
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  emergency: propEmergency,
+  grid: propGrid,
+  onSelect
+}: GridInfrastructureProps) {
+  const liveEmergency = useLiveEmergency()
+  const liveGrid = useLiveGrid()
+  const emergencyData = propEmergency ?? liveEmergency
+  const gridData = propGrid ?? liveGrid
+  const isEmergency = emergencyData?.emergency_active_state === true || gridData?.safety_state === 'EMERGENCY'
 
   // Support & Fencing — Chainlink/metal palisade perimeter
   const fencePosts = []
@@ -55,7 +73,7 @@ export function GridInfrastructure({ position = [0, 0, 0], rotation = [0, 0, 0] 
   )
 
   return (
-    <Interactive id="grid-main" type="grid" position={position} rotation={rotation}>
+    <Interactive id="grid-main" type="grid" position={position} rotation={rotation} onSelect={onSelect}>
       <group scale={1.2}>
       {/* Concrete Base Pad with wider footprint */}
       <Box args={[10, 0.2, 7]} position={[0, 0.1, 0]} receiveShadow>
