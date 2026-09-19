@@ -26,9 +26,9 @@ export const SelectionPanel: React.FC<SelectionPanelProps> = ({ entityId, entity
         <div className="space-y-2 text-sm text-slate-700 dark:text-zinc-300">
           <p><strong>Type:</strong> {ev.vehicle_type} ({ev.urgency})</p>
           <p><strong>SoC:</strong> {ev.current_soc.toFixed(1)}% / {ev.target_soc.toFixed(1)}%</p>
-          <p><strong>Energy Req:</strong> {ev.energy_required.toFixed(1)} kWh</p>
-          <p><strong>Priority Score:</strong> {ev.priority_score.toFixed(2)}</p>
-          <p><strong>Current Rate:</strong> {ev.current_rate.toFixed(1)} kW</p>
+          <p><strong>Energy Req:</strong> {(ev.energy_required ?? 0).toFixed(1)} kWh</p>
+          <p><strong>Priority Score:</strong> {(ev.priority_score ?? 0).toFixed(2)}</p>
+          <p><strong>Current Rate:</strong> {(ev.current_rate ?? 0).toFixed(1)} kW</p>
           <p><strong>Station:</strong> {ev.station_id || 'None'}</p>
           {alloc && (
             <>
