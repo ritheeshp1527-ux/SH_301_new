@@ -91,6 +91,7 @@ def test_spawn_ev_validation():
     assert len(evs) == 1
     assert evs[0]["ev_id"] == "EV-1"
     assert evs[0]["urgency"] == "NORMAL"
+    # Auto-assignment will only happen if there are stations, which are currently empty in this test state.
     
     invalid_req = ev_req.copy()
     invalid_req["ev_id"] = "EV-2"
