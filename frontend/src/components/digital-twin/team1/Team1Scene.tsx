@@ -6,35 +6,33 @@ import { ParkingArea } from './ParkingArea'
 import { ChargingStation } from './ChargingStation'
 import { GridInfrastructure } from './GridInfrastructure'
 import { ElectricalWires } from './ElectricalWires'
-import { EVModel } from './EVModels'
-import { PowerFlowSystem } from './PowerFlowSystem'
-import { WeatherEnvironment } from './WeatherEnvironment'
 import { Roads } from './Roads'
 import { Landscaping } from './Landscaping'
-import { useLiveStations, useLiveEVs } from '../adapters/useLiveAdapters'
+import { useLiveStations, useLiveEVs, useLiveSystemState } from '../adapters/useLiveAdapters'
 import type { SystemState } from '@/types/system.types'
+import { DEFAULT_STATIONS, getStationPlacement } from './positioning'
+import { EVSceneLayer } from './EVSceneLayer'
+import { PowerFlowSystem } from './PowerFlowSystem'
+import { WeatherEnvironment } from './WeatherEnvironment'
 
 interface Team1SceneProps {
   onSelect?: (id: string, type: string) => void
   systemState?: SystemState
 }
 
-import { DEFAULT_STATIONS, getStationPlacement, resolveEVPlacements } from './positioning'
-
 export function Team1Scene({ onSelect, systemState: propState }: Team1SceneProps = {}) {
   const liveStations = useLiveStations()
   const liveEVs = useLiveEVs()
+  const liveState = useLiveSystemState()
 
   const stations = propState?.stations ?? liveStations
   const evs = propState?.evs ?? liveEVs
+  const simulationTime = propState?.simulation?.simulation_time ?? liveState?.simulation?.simulation_time ?? 0
 
   // Determine stations to render: use live/prop stations if available, else standard 6-bay default layout
   const stationsToRender = stations && stations.length > 0
     ? stations
     : DEFAULT_STATIONS.map((id) => ({ station_id: id, occupancy: false, connected_ev_id: null, capacity: 22, maximum_charging_rate: 22 }))
-
-  // Resolve placement for every EV deterministically according to Phase 14C rules
-  const resolvedEVs = resolveEVPlacements(evs, stationsToRender)
 
   return (
     <>
@@ -84,17 +82,14 @@ export function Team1Scene({ onSelect, systemState: propState }: Team1SceneProps
         )
       })}
 
-      {/* EVs: Render dynamically based on live/prop state */}
-      {resolvedEVs.map(({ ev, pos }) => (
-        <EVModel
-          key={ev.ev_id}
-          ev_id={ev.ev_id}
-          ev={ev}
-          position={pos}
-          rotation={[0, Math.PI, 0]}
-          onSelect={onSelect}
-        />
-      ))}
+      {/* EVs rendered dynamically from live simulation state (spawned via A1 controls);
+          the layer also animates departures once their departure time passes */}
+      <EVSceneLayer
+        evs={evs}
+        stations={stationsToRender}
+        simulationTime={simulationTime}
+        onSelect={onSelect}
+      />
 
       {/* Grid and Transformer */}
       <GridInfrastructure

@@ -45,7 +45,9 @@ class StateValidator:
         
         expected_usable = min(s.generation, site_load)
         expected_excess = max(0.0, s.generation - site_load)
-        expected_grid_import = max(0.0, site_load - expected_usable)
+        # Grid import is the physics deficit capped at the active limit (load-shedding
+        # semantics — same cap the engine boundary applies when reconciling the state).
+        expected_grid_import = min(candidate.grid.active_limit, max(0.0, site_load - expected_usable))
         
         if abs(s.usable_solar - expected_usable) > 1e-4:
             errors.append("Usable solar is inconsistent with energy model")

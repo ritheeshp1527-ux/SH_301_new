@@ -219,7 +219,7 @@ class EngineBoundary:
                 ev.station_id = iev.station_id
                 if hasattr(ev, "current_rate"): ev.current_rate = round(iev.current_charging_rate_kw, 4) if iev.current_charging_rate_kw >= 0.01 else 0.0
                 if hasattr(ev, "energy_required"): ev.energy_required = round(iev.energy_required_kwh, 4)
-                if hasattr(ev, "time_remaining"): ev.time_remaining = round(iev.time_remaining_hours, 4)
+                if hasattr(ev, "time_remaining"): ev.time_remaining = round(max(0.0, iev.time_remaining_hours), 4)  # clamp: engine may report negative after departure; API contract requires >= 0
                 if hasattr(ev, "required_average_power"): ev.required_average_power = round(iev.required_average_power_kw, 4)
                 if hasattr(ev, "priority_score"): ev.priority_score = round(iev.priority_score, 4)
                 if hasattr(ev, "estimated_completion"): ev.estimated_completion = round(iev.estimated_completion_time or 0.0, 4)
