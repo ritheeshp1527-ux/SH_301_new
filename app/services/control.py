@@ -71,7 +71,19 @@ class ControlService:
         candidate = self.state_manager.get_state()
         if any(ev.ev_id == ev_data["ev_id"] for ev in candidate.evs):
             raise ValueError("EV with this ID already exists")
-            
+
+        # A spawn whose window already elapsed cannot be served: the assignment below
+        # would mark a bay occupied for an EV the engine can never charge, so the bay,
+        # the STATIONS counter and the 3D scene would briefly show a phantom vehicle
+        # (until the next tick departs it). Reject explicitly and tell the operator the
+        # live window instead of silently producing a no-op spawn.
+        now = candidate.simulation.simulation_time
+        if ev_data["departure"] <= now:
+            raise ValueError(
+                f"EV window has already elapsed: departure {ev_data['departure']} is not after "
+                f"the current simulation time {now}. Set a window that includes T+{now}."
+            )
+
         station_id = ev_data.get("station_id")
         if station_id:
             # Validate and assign to station
@@ -82,12 +94,16 @@ class ControlService:
                 raise ValueError("Station is already occupied")
             station.occupancy = True
             station.connected_ev_id = ev_data["ev_id"]
+            # Keep the status label in step with occupancy: leaving it AVAILABLE made the
+            # station render as "AVAILABLE" while a car occupied the bay.
+            station.status = "OCCUPIED"
         else:
             # Auto-assign to first available station
             station = next((s for s in candidate.stations if not s.occupancy), None)
             if station:
                 station.occupancy = True
                 station.connected_ev_id = ev_data["ev_id"]
+                station.status = "OCCUPIED"
                 station_id = station.station_id
             
         new_ev = EV(

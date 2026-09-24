@@ -1,5 +1,4 @@
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from app.models.sqlalchemy_db import EVDefinition, StationDefinition, ScenarioProfile
 

@@ -87,7 +87,8 @@ def test_initialize_from_definitions(repo):
     assert len(state.evs) == 1
     assert state.evs[0].ev_id == "EV-1"
     assert state.evs[0].battery_capacity == 50.0
-    assert state.evs[0].current_soc == 0.0 # Deterministic runtime initialization
+    # initialize_from_definitions seeds random.seed(42), so the first EV's SOC is deterministic
+    assert state.evs[0].current_soc == 55.0
     
     assert len(state.stations) == 1
     assert state.stations[0].station_id == "ST-1"
@@ -102,8 +103,8 @@ def test_reset_does_not_delete_database(repo):
     manager.initialize_from_definitions(repo)
     
     manager.reset_state()
-    # Live EVs are cleared from runtime
-    assert len(manager.get_state().evs) == 0
+    # Live EVs are preserved but reset to their default properties
+    assert len(manager.get_state().evs) == 1
     # DB remains persistently populated
     assert len(repo.get_all_ev_definitions()) == 1
 

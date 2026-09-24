@@ -1,0 +1,27 @@
+INFO:     Started server process [26228]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54781 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54783 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54841 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59681 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56204 - "POST /api/control/grid-limit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56206 - "POST /api/control/building-demand HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56208 - "POST /api/simulation/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56213 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52081 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52082 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52083 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52083 - "GET /assets/index-BM1JnnjZ.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52084 - "GET /assets/index-BxIseM1n.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52084 - "GET /assets/DigitalTwinScene-TRTTMoC8.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52093 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52098 - "WebSocket /ws/state" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60620 - "OPTIONS /api/simulation/reset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60620 - "POST /api/simulation/reset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53490 - "POST /api/control/building-demand HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53492 - "POST /api/simulation/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53494 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49914 - "GET /api/state HTTP/1.1" 200 OK

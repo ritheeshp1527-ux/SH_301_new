@@ -11,10 +11,24 @@ export const STATION_LAYOUT: Record<string, { stationPos: [number, number, numbe
 
 export const DEFAULT_STATIONS = ['ST-1', 'ST-2', 'ST-3', 'ST-4', 'ST-5', 'ST-6']
 
+export const WAITING_AREA_CENTER_X = 16
 export const WAITING_BAY_POSITIONS: [number, number, number][] = [
   [14.5, 0, 10],
   [17.5, 0, 10]
 ]
+
+/**
+ * Deterministic waiting-bay slot for a given occupancy level.
+ * Uses the same centering formula as ParkingArea so every waiting EV sits ON the
+ * asphalt pad (the pad in Team1Scene grows to match `totalWaiting` spots).
+ * For <= 2 waiting EVs this yields exactly WAITING_BAY_POSITIONS.
+ */
+export function getWaitingBayPlacement(slotIndex: number, totalWaiting: number): [number, number, number] {
+  const spots = Math.max(2, totalWaiting)
+  const spotWidth = 3
+  const x = WAITING_AREA_CENTER_X - (spots * spotWidth) / 2 + slotIndex * spotWidth + spotWidth / 2
+  return [x, 0, 10]
+}
 
 export function getStationPlacement(stationId: string, idx: number, count: number): {
   stationPos: [number, number, number]
@@ -118,11 +132,7 @@ export function resolveEVPlacements(
   // Deterministically assign waiting bay slots (sorted by ev_id for stability across WebSocket ticks)
   waitingBayEVs.sort((a, b) => a.ev_id.localeCompare(b.ev_id))
   const waitingAssignments = waitingBayEVs.map((ev, slotIndex) => {
-    const pos: [number, number, number] = WAITING_BAY_POSITIONS[slotIndex] ?? [
-      14.5 + (slotIndex * 3),
-      0,
-      10
-    ]
+    const pos = getWaitingBayPlacement(slotIndex, waitingBayEVs.length)
     return { ev, pos, isChargingBay: false }
   })
 

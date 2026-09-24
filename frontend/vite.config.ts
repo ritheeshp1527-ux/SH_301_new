@@ -11,4 +11,12 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
+  // The frontend now calls same-origin `/api` + `/ws` (no hardcoded localhost),
+  // so the dev server forwards those namespaces to the FastAPI backend.
+  server: {
+    proxy: {
+      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/ws': { target: 'ws://127.0.0.1:8000', ws: true },
+    },
+  },
 })

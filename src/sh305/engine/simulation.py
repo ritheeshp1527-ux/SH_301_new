@@ -1,6 +1,6 @@
 import math
 from sh305.domain.system_state import SystemState
-from sh305.domain.enums import TimeOfDay, WeatherCondition
+from sh305.domain.enums import TimeOfDay, WeatherCondition, StationStatus
 from sh305.engine.priority import WeightConfig
 from sh305.engine.updater import update_state_allocation
 
@@ -71,11 +71,12 @@ def step_simulation(state: SystemState, step_hours: float = 0.25, weights: Weigh
         if time < ev.arrival_time or time >= ev.departure_time:
             ev.current_charging_rate_kw = 0.0
             if ev.station_id:
-                # Free the station
+                # Free the station and mark it available
                 st = next((s for s in state.stations if s.station_id == ev.station_id), None)
                 if st:
                     st.connected_ev_id = None
                     st.occupied = False
+                    st.status = StationStatus.AVAILABLE
                 ev.station_id = None
         else:
             # Inside the charging window (Arrived and not departed)
@@ -86,6 +87,7 @@ def step_simulation(state: SystemState, step_hours: float = 0.25, weights: Weigh
                     st = available_stations[0]
                     st.connected_ev_id = ev.ev_id
                     st.occupied = True
+                    st.status = StationStatus.OCCUPIED
                     ev.station_id = st.station_id
 
     # 8, 9, 10. Recalculate requirements, priorities, and allocation

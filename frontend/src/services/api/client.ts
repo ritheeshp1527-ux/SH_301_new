@@ -7,6 +7,40 @@ import type { ApiError } from "@/types/api.types";
  * Does NOT contain any domain-specific endpoints.
  */
 
+/**
+ * Pull a human-readable reason out of an error body.
+ * FastAPI answers with `{ detail: "..." }` for HTTPException and
+ * `{ detail: [{ loc, msg, ... }] }` for request validation, while other services use
+ * `{ message: "..." }`. Reading only `message` meant every rejected action surfaced
+ * as the opaque "An error occurred".
+ */
+function extractErrorMessage(payload: unknown): string | null {
+  if (!payload) return null;
+  if (typeof payload === "string") return payload;
+  if (typeof payload !== "object") return null;
+
+  const body = payload as { detail?: unknown; message?: unknown };
+  const detail = body.detail ?? body.message;
+
+  if (typeof detail === "string") return detail;
+
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const entry = item as { loc?: unknown[]; msg?: unknown };
+        const field = Array.isArray(entry.loc) ? entry.loc.slice(1).join(".") : "";
+        const msg = typeof entry.msg === "string" ? entry.msg : null;
+        if (!msg) return null;
+        return field ? `${field}: ${msg}` : msg;
+      })
+      .filter((part): part is string => Boolean(part));
+    if (parts.length) return parts.join("; ");
+  }
+
+  return null;
+}
+
 class ApiClient {
   private baseURL = env.API_BASE_URL;
 
@@ -31,10 +65,10 @@ class ApiClient {
       const response = await fetch(url, { ...options, headers });
       
       if (!response.ok) {
-        let errorMessage = "An error occurred";
+        let errorMessage = `Request failed (HTTP ${response.status})`;
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          errorMessage = extractErrorMessage(errorData) ?? errorMessage;
         } catch {
           // Response is not JSON
         }

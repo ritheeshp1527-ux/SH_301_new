@@ -1,5 +1,5 @@
 import { useLiveEnvironment } from '../adapters/useLiveAdapters'
-import { Environment as DreiEnvironment, Sky, Cloud } from '@react-three/drei'
+import { Environment as DreiEnvironment, Lightformer, Sky, Cloud } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useRef, useMemo } from 'react'
 import * as THREE from 'three'
@@ -114,8 +114,34 @@ export function WeatherEnvironment({ environment: propEnv }: { environment?: Env
         shadow-bias={-0.001}
       />
 
-      {/* HDRI environment map — affects material reflections */}
-      <DreiEnvironment preset={envPreset as any} />
+      {/* Environment map for material reflections.
+          Previously <Environment preset=...> streamed an HDRI from a remote CDN at
+          runtime: offline/blocked networks left every material unlit and the async
+          arrival could pop the scene mid-view. Lightformers bake an equivalent map
+          locally and deterministically. `key` re-bakes only when the preset changes. */}
+      <DreiEnvironment key={envPreset} resolution={64} frames={1}>
+        <Lightformer
+          form="ring"
+          intensity={isNight ? 0.2 : isCloudy ? 0.7 : 1.6}
+          color={isNight ? '#22304f' : isCloudy ? '#9fb0c8' : '#ffe2b0'}
+          position={[0, 6, -9]}
+          scale={10}
+        />
+        <Lightformer
+          intensity={isNight ? 0.12 : isCloudy ? 0.45 : 0.9}
+          color={isNight ? '#1a2438' : isCloudy ? '#b9c9de' : '#cfe4ff'}
+          position={[-6, 2, 2]}
+          rotation={[0, Math.PI / 2, 0]}
+          scale={[16, 6, 1]}
+        />
+        <Lightformer
+          intensity={isNight ? 0.12 : isCloudy ? 0.45 : 0.9}
+          color={isNight ? '#20283c' : isCloudy ? '#b9c9de' : '#e8f2ff'}
+          position={[6, 2, 2]}
+          rotation={[0, -Math.PI / 2, 0]}
+          scale={[16, 6, 1]}
+        />
+      </DreiEnvironment>
 
       {/* Sky dome (daytime only) — turbidity/rayleigh tuned per weather state */}
       {!isNight && (

@@ -95,6 +95,8 @@ def test_control_service_spawn_ev_station_assignment(control_service):
     assert state.evs[0].ev_id == "EV-X"
     assert state.stations[0].occupancy is True
     assert state.stations[0].connected_ev_id == "EV-X"
+    # A reserved bay must never keep advertising itself as AVAILABLE
+    assert state.stations[0].status == "OCCUPIED"
 
 def test_control_service_spawn_ev_station_occupied(control_service):
     # Setup occupied station
@@ -126,3 +128,49 @@ def test_control_service_spawn_ev_station_occupied(control_service):
     with pytest.raises(ValueError, match="Station is already occupied"):
         control_service.process_spawn_ev(ev_data)
 
+
+def test_control_service_spawn_ev_rejects_elapsed_window(control_service):
+    # An EV whose arrival/departure window already passed cannot be charged: accepting
+    # it would reserve a bay for a vehicle the engine immediately departs, leaving a
+    # phantom occupant in the stations list and the 3D scene.
+    candidate = control_service.state_manager.get_state()
+    candidate.simulation.simulation_time = 45.0
+    control_service.state_manager.replace_state(candidate)
+
+    ev_data = {
+        "ev_id": "EV-LATE",
+        "vehicle_type": "Car",
+        "battery_capacity": 50.0,
+        "target_soc": 80.0,
+        "arrival": 0.0,
+        "departure": 12.0,
+        "maximum_rate": 11.0,
+        "station_id": None
+    }
+
+    with pytest.raises(ValueError, match="already elapsed"):
+        control_service.process_spawn_ev(ev_data)
+
+    state = control_service.state_manager.get_state()
+    assert all(ev.ev_id != "EV-LATE" for ev in state.evs)
+    assert all(station.connected_ev_id != "EV-LATE" for station in state.stations)
+
+def test_control_service_spawn_ev_accepts_window_that_includes_now(control_service):
+    # A window that straddles the current simulation time stays valid.
+    candidate = control_service.state_manager.get_state()
+    candidate.simulation.simulation_time = 45.0
+    control_service.state_manager.replace_state(candidate)
+
+    ev_data = {
+        "ev_id": "EV-LIVE",
+        "vehicle_type": "Car",
+        "battery_capacity": 50.0,
+        "target_soc": 80.0,
+        "arrival": 45.0,
+        "departure": 57.0,
+        "maximum_rate": 11.0,
+        "station_id": None
+    }
+
+    state = control_service.process_spawn_ev(ev_data)
+    assert any(ev.ev_id == "EV-LIVE" for ev in state.evs)

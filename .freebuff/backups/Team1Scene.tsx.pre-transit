@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { Ground } from './Ground'
 import { Building } from './Building'
 import { SolarArray } from './SolarPanel'
@@ -7,14 +6,15 @@ import { ParkingArea } from './ParkingArea'
 import { ChargingStation } from './ChargingStation'
 import { GridInfrastructure } from './GridInfrastructure'
 import { ElectricalWires } from './ElectricalWires'
-import { Roads } from './Roads'
-import { Landscaping } from './Landscaping'
-import { useLiveStations, useLiveEVs, useLiveSystemState } from '../adapters/useLiveAdapters'
-import type { SystemState } from '@/types/system.types'
-import { DEFAULT_STATIONS, getStationPlacement, resolveEVPlacements } from './positioning'
-import { EVSceneLayer } from './EVSceneLayer'
+import { EVModel } from './EVModels'
 import { PowerFlowSystem } from './PowerFlowSystem'
 import { WeatherEnvironment } from './WeatherEnvironment'
+import { Roads } from './Roads'
+import { Landscaping } from './Landscaping'
+import { useLiveStations, useLiveEVs } from '../adapters/useLiveAdapters'
+import type { SystemState } from '@/types/system.types'
+import { useMemo } from 'react'
+import { DEFAULT_STATIONS, getStationPlacement, resolveEVPlacements } from './positioning'
 
 interface Team1SceneProps {
   onSelect?: (id: string, type: string) => void
@@ -24,24 +24,21 @@ interface Team1SceneProps {
 export function Team1Scene({ onSelect, systemState: propState }: Team1SceneProps = {}) {
   const liveStations = useLiveStations()
   const liveEVs = useLiveEVs()
-  const liveState = useLiveSystemState()
 
   const stations = propState?.stations ?? liveStations
   const evs = propState?.evs ?? liveEVs
-  const simulationTime = propState?.simulation?.simulation_time ?? liveState?.simulation?.simulation_time ?? 0
 
   // Determine stations to render: use live/prop stations if available, else standard 6-bay default layout
   const stationsToRender = stations && stations.length > 0
     ? stations
     : DEFAULT_STATIONS.map((id) => ({ station_id: id, occupancy: false, connected_ev_id: null, capacity: 22, maximum_charging_rate: 22 }))
 
-  // Waiting EVs still on campus (departed ones have left). The waiting-area pad
-  // grows to fit them so overflow vehicles never park on open ground.
-  const waitingCount = useMemo(() => {
-    return resolveEVPlacements(evs, stationsToRender as any).filter(
-      (p) => !p.isChargingBay && simulationTime < (p.ev.departure ?? Infinity)
-    ).length
-  }, [evs, stationsToRender, simulationTime])
+  // Dynamically place every EV in the live state: connected EVs in their station's
+  // charging bay, unassigned EVs in the waiting area (Phase 14C positioning rules).
+  const evPlacements = useMemo(
+    () => resolveEVPlacements(evs, stationsToRender as any),
+    [evs, stationsToRender]
+  )
 
   return (
     <>
@@ -75,7 +72,7 @@ export function Team1Scene({ onSelect, systemState: propState }: Team1SceneProps
       <ParkingArea position={[0, 0, 10]} spots={Math.max(6, stationsToRender.length)} isCharging={true} />
 
       {/* Waiting Area (Non-charging parking spots) on the right side with gap */}
-      <ParkingArea position={[16, 0, 10]} spots={Math.max(2, waitingCount)} isCharging={false} />
+      <ParkingArea position={[16, 0, 10]} spots={2} isCharging={false} />
 
       {/* Charging Stations */}
       {stationsToRender.map((station, idx) => {
@@ -91,14 +88,16 @@ export function Team1Scene({ onSelect, systemState: propState }: Team1SceneProps
         )
       })}
 
-      {/* EVs rendered dynamically from live simulation state (spawned via A1 controls);
-          the layer also animates departures once their departure time passes */}
-      <EVSceneLayer
-        evs={evs}
-        stations={stationsToRender}
-        simulationTime={simulationTime}
-        onSelect={onSelect}
-      />
+      {/* EVs rendered dynamically from live simulation state (spawned via A1 controls) */}
+      {evPlacements.map(({ ev, pos }) => (
+        <EVModel
+          key={ev.ev_id}
+          ev={ev}
+          position={pos}
+          rotation={[0, Math.PI, 0]}
+          onSelect={onSelect}
+        />
+      ))}
 
       {/* Grid and Transformer */}
       <GridInfrastructure

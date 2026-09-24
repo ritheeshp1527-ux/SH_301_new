@@ -19,27 +19,29 @@ def seed_data():
     try:
         # Seed EVs
         if not db.query(EVDefinition).first():
-            ev1 = EVDefinition(
-                id="EV-100", vehicle_type="Car", battery_capacity=50.0, 
-                range=300.0, minimum_charging_rate=0.0, maximum_charging_rate=11.0
-            )
-            ev2 = EVDefinition(
-                id="EV-101", vehicle_type="Van", battery_capacity=80.0, 
-                range=400.0, minimum_charging_rate=0.0, maximum_charging_rate=22.0
-            )
-            db.add_all([ev1, ev2])
+            evs = [
+                EVDefinition(id="EV-1", vehicle_type="SUV", battery_capacity=80.0, range=400.0, minimum_charging_rate=0.0, maximum_charging_rate=22.0),
+                EVDefinition(id="ev_002", vehicle_type="Sedan", battery_capacity=60.0, range=350.0, minimum_charging_rate=0.0, maximum_charging_rate=11.0),
+                EVDefinition(id="ev_003", vehicle_type="Hatchback", battery_capacity=45.0, range=250.0, minimum_charging_rate=0.0, maximum_charging_rate=11.0),
+                EVDefinition(id="ev_004", vehicle_type="Scooter", battery_capacity=5.0, range=80.0, minimum_charging_rate=0.0, maximum_charging_rate=3.0),
+                EVDefinition(id="ev_005", vehicle_type="Bike", battery_capacity=15.0, range=150.0, minimum_charging_rate=0.0, maximum_charging_rate=7.0),
+                EVDefinition(id="ev_006", vehicle_type="Sedan", battery_capacity=65.0, range=380.0, minimum_charging_rate=0.0, maximum_charging_rate=11.0),
+                EVDefinition(id="ev_007", vehicle_type="SUV", battery_capacity=90.0, range=450.0, minimum_charging_rate=0.0, maximum_charging_rate=22.0),
+                EVDefinition(id="ev_008", vehicle_type="Hatchback", battery_capacity=50.0, range=280.0, minimum_charging_rate=0.0, maximum_charging_rate=11.0)
+            ]
+            db.add_all(evs)
             
         # Seed Stations
         if not db.query(StationDefinition).first():
-            st1 = StationDefinition(
-                station_id="ST-1", capacity=22.0, 
-                minimum_charging_rate=0.0, maximum_charging_rate=22.0
-            )
-            st2 = StationDefinition(
-                station_id="ST-2", capacity=11.0, 
-                minimum_charging_rate=0.0, maximum_charging_rate=11.0
-            )
-            db.add_all([st1, st2])
+            sts = [
+                StationDefinition(station_id="ST-1", capacity=22.0, minimum_charging_rate=0.0, maximum_charging_rate=22.0),
+                StationDefinition(station_id="ST-2", capacity=22.0, minimum_charging_rate=0.0, maximum_charging_rate=22.0),
+                StationDefinition(station_id="ST-3", capacity=22.0, minimum_charging_rate=0.0, maximum_charging_rate=22.0),
+                StationDefinition(station_id="ST-4", capacity=22.0, minimum_charging_rate=0.0, maximum_charging_rate=22.0),
+                StationDefinition(station_id="ST-5", capacity=22.0, minimum_charging_rate=0.0, maximum_charging_rate=22.0),
+                StationDefinition(station_id="ST-6", capacity=22.0, minimum_charging_rate=0.0, maximum_charging_rate=22.0)
+            ]
+            db.add_all(sts)
             
         # Seed Scenario
         if not db.query(ScenarioProfile).first():

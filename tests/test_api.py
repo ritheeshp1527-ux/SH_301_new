@@ -119,8 +119,9 @@ def test_spawn_urgent_ev_validation():
     response = client.post("/api/control/spawn-urgent-ev", json=ev_req)
     assert response.status_code == 200
     evs = response.json()["evs"]
-    assert len(evs) == 1
-    assert evs[0]["urgency"] == "URGENT"
+    # Reset preserves previously spawned EVs, so assert on the spawned EV rather than the total count
+    spawned = next(ev for ev in evs if ev["ev_id"] == "EV-U1")
+    assert spawned["urgency"] == "URGENT"
 
 def test_strategy_validation():
     response = client.post("/api/control/strategy", json={"active_strategy": "SOLAR_FIRST"})

@@ -1,0 +1,45 @@
+INFO:     Started server process [26848]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51064 - "WebSocket /ws/state" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:51098 - "GET /assets/DigitalTwinScene-DRq755Id.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51099 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51101 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51123 - "GET /?v=final HTTP/1.1" 200 OK
+INFO:     connection closed
+INFO:     127.0.0.1:51123 - "GET /assets/index-C_REkkc_.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51124 - "GET /assets/index-FGWoprWR.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51124 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51123 - "GET /assets/DigitalTwinScene-DRq755Id.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51126 - "WebSocket /ws/state" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:50455 - "GET /?v=final HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50455 - "GET /assets/index-C_REkkc_.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49792 - "GET /assets/index-FGWoprWR.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49792 - "GET /assets/DigitalTwinScene-DRq755Id.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49792 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59917 - "WebSocket /ws/state" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:49305 - "POST /api/simulation/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63793 - "POST /api/simulation/reset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50476 - "POST /api/control/spawn-ev HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50476 - "POST /api/control/spawn-ev HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50476 - "POST /api/control/spawn-ev HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54172 - "POST /api/control/spawn-ev HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56177 - "POST /api/simulation/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60648 - "POST /api/simulation/pause HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60648 - "POST /api/simulation/reset HTTP/1.1" 200 OK
+INFO:     connection closed
+INFO:     127.0.0.1:54462 - "GET /?v=final HTTP/1.1" 200 OK
+INFO:     connection closed
+INFO:     127.0.0.1:54462 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59445 - "WebSocket /ws/state" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:58843 - "GET /?v=final HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58843 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58844 - "WebSocket /ws/state" [accepted]
+INFO:     connection open
+INFO:     connection closed

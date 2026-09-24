@@ -26,7 +26,6 @@ const DEPART_SPEED = 11.0   // units/sec while leaving the campus
 const ARRIVE_EPSILON = 0.05 // snap threshold (world units)
 const GONE_EPSILON = 0.6    // removal threshold for the off-screen exit
 
-const DEFAULT_EXIT_ORIGIN: [number, number, number] = [17.5, 0, 10]
 const STAGE1_TARGET = (from: [number, number, number]): TransitTarget => ({
   pos: [from[0], 0, 15.5],
   rotY: Math.PI
@@ -186,28 +185,33 @@ export function EVSceneLayer({ evs, stations, simulationTime, onSelect }: EVScen
   // departed EV is never re-staged by later state broadcasts (prevents respawn loops).
   const exitedRef = useRef(new Set<string>())
 
-  // Re-arm the exit animation for any EV that is parked again (e.g. after a sim reset).
+  // On first mount, EVs that are ALREADY departed (sim time past their departure when
+  // the page loads) must NOT replay an exit drive-off — they left before we started
+  // watching. Mark them as gone so they are never staged.
+  const mountedRef = useRef(false)
   useEffect(() => {
-    for (const p of [...chargingPlacements, ...waitingPlacements]) {
-      exitedRef.current.delete(p.ev.ev_id)
+    if (mountedRef.current) return
+    mountedRef.current = true
+    for (const ev of departedEVs) {
+      exitedRef.current.add(ev.ev_id)
     }
-  }, [chargingPlacements, waitingPlacements])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Promote newly-departed EVs into stage 1 (reverse out of bay/slot)
+  // Reconcile parked EVs with the departing list:
+  // - Re-arm the exit animation for any EV that is parked again (e.g. after a sim reset).
+  // - Drop departing entries whose EV is parked again — otherwise the same vehicle is
+  //   rendered twice (parked in its bay AND still driving away as a ghost).
   useEffect(() => {
+    const parkedIds = new Set([...chargingPlacements, ...waitingPlacements].map((p) => p.ev.ev_id))
+    if (parkedIds.size === 0) return
+    for (const id of parkedIds) {
+      exitedRef.current.delete(id)
+    }
     setDeparting((prev) => {
-      const known = new Set(prev.map((e) => e.evId))
-      const additions = departedEVs
-        .filter((ev) => !known.has(ev.ev_id) && !exitedRef.current.has(ev.ev_id))
-        .map((ev) => ({
-          evId: ev.ev_id,
-          ev,
-          stage: 1 as const,
-          from: lastPositionsRef.current.get(ev.ev_id) ?? DEFAULT_EXIT_ORIGIN
-        }))
-      return additions.length ? [...prev, ...additions] : prev
+      const filtered = prev.filter((d) => !parkedIds.has(d.evId))
+      return filtered.length === prev.length ? prev : filtered
     })
-  }, [departedEVs])
+  }, [chargingPlacements, waitingPlacements])
 
   const advanceToStage2 = (evId: string) => {
     setDeparting((prev) => prev.map((e) => (e.evId === evId ? { ...e, stage: 2 as const } : e)))
@@ -216,6 +220,29 @@ export function EVSceneLayer({ evs, stations, simulationTime, onSelect }: EVScen
     exitedRef.current.add(evId)
     setDeparting((prev) => prev.filter((e) => e.evId !== evId))
   }
+
+  // Promote newly-departed EVs into stage 1 (reverse out of bay/slot).
+  // NOTE: declared AFTER the reconcile effect above so the mount-time "already
+  // departed" seeding runs first and suppresses the reload replay.
+  useEffect(() => {
+    setDeparting((prev) => {
+      const known = new Set(prev.map((e) => e.evId))
+      const additions: DepartingEntry[] = []
+      for (const ev of departedEVs) {
+        if (known.has(ev.ev_id) || exitedRef.current.has(ev.ev_id)) continue
+        const from = lastPositionsRef.current.get(ev.ev_id)
+        if (!from) {
+          // We never saw this EV parked (e.g. its arrival/departure window elapsed
+          // before it ever rendered). There is no bay to reverse out of — staging an
+          // exit here would materialise a ghost car on the lane and drive it away.
+          exitedRef.current.add(ev.ev_id)
+          continue
+        }
+        additions.push({ evId: ev.ev_id, ev, stage: 1 as const, from })
+      }
+      return additions.length ? [...prev, ...additions] : prev
+    })
+  }, [departedEVs])
 
   // Render parked EVs while recording their previous slot for smooth re-assignment.
   const parkedNodes: ReactNode[] = []

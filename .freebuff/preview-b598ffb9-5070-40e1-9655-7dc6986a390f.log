@@ -1,0 +1,8 @@
+INFO:     127.0.0.1:57854 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54440 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54441 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54441 - "GET /assets/index-Bf4YrQvz.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54442 - "GET /assets/index-BxIseM1n.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54442 - "GET /assets/DigitalTwinScene-Db798Ed7.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54448 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50375 - "GET / HTTP/1.1" 200 OK
